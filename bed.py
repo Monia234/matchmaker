@@ -182,6 +182,13 @@ class AncestrySegment(object):
             AncestrySegment.from_string(as.to_string()) == as
         """
 
+    # How far apart must common-ancestry segments be to be considered distinct
+    # this is used in Individual.shared_ancestry_with
+    DISTANCE_CUTOFF = 100000
+    # What must be the total length of a bunch of common-ancestry segments to
+    # warrant merging them together.
+    SMOOTH_CUTOFF = 3000000
+
     def __init__(self, code, chromosome, interval_bp, interval_cm):
         """ Constructor.
 
@@ -269,6 +276,140 @@ class AncestrySegment(object):
                 Interval(start_bp, end_bp),
                 Interval(start_cm, end_cm))
 
+class SwitchPoint(object):
+    """ Represents a change in ancestry at a given location.
+        SwitchPoint instances are equal if all their fields are equal, and
+        SwitchPoint instances are compared on the basis of their positions.
+        """
+
+    @staticmethod
+    def from_segment_pair(left, right):
+        if left.chromosome != right.chromosome:
+            raise ValueError("cannot construct SwitchPoint across "
+                    "chromosomes.")
+        position_bp = (left.interval_bp.end + right.interval_bp.start) / 2
+        position_cm = (left.interval_cm.end = right.interval_cm.start) / 2
+        return SwitchPoint(left.chromosome, position_bp, position_cm,
+                left.code, right.code)
+
+    def __init__(self, chromosome, position_bp, position_cm,
+            source, destination):
+        """ Constructor.
+
+            Arguments:
+                chromosome (int):
+                    the number of the chromosome on which the switch occurs.
+                position_bp (bp):
+                    the position of the switch point, in base pairs.
+                position_cm (float):
+                    the position of the switch point, in centimorgan.
+                source (AncestryCode):
+                    the ancestry on the left of this switch point.
+                destination (AncestryCode):
+                    the ancestry on the right of htis switch point.
+
+            Notes:
+                It is possible to represent the local ancestry on a chromosome
+                as a list of switch points together with the start and end
+                positions on that chromosome. Chromosome.switch_points creates
+                such a representation.
+            """
+        if source == destination:
+            raise ValueError("invalid SwitchPoint: the source and destination "
+                    "ancestries must be different.")
+
+        self.chromosome  = chromosome
+        self.position    = position
+        self.source      = source
+        self.desitnation = destination
+
+class Chromosome(object):
+    """ Represents the ancestry information along one chromosome.
+        Essentially wraps around a list of AncestrySegment objects.
+        """
+
+    @staticmethod
+    def check_ancestry_segments(chromosome, segments):
+        """ Verify that segments are ordered and are all on the same
+            chromosome.
+            """
+        for (i, segment) in enumerate(segments[:-1]):
+            next_segment = segments[i + 1]
+            if not segment < next_segment:
+                raise ValueError("segments are not ordered")
+            if segment.chromosome != chromosome:
+                raise ValueError("not all segments are on the same chromosome")
+        return True
+
+    def __init__(self, number, segments):
+        """ Constructor.
+
+            Arguments:
+                number (int):
+                    the number of this chromosome.
+                segments (list of AncestrySegment):
+                    the list of ancestry segments along this chromosome.
+
+            Note:
+                the segments are checked for consistency: they must be
+                non-overlapping, ordered, and all indexed to the same
+                chromosome number, which must also match the number passed in.
+            """
+        if not segments:
+            raise ValueError("a non-empty list of segments must be given to "
+                    "construct a Chromosome.")
+        if number != segments[0].chromosome:
+            raise ValueError("one or more segments given do not match the "
+                    "given chromosome number.")
+        Chromosome.check_ancestry_segments(segments),
+        self.segments = segments
+        self.switches = None # the memoized result of as_switch_points
+
+    def segment_index_of(self, position):
+        for (i, segment) in enumerate(self.segments):
+            if position in segment:
+                return i
+        return -1
+
+    def __getitem__(self, index):
+        """ Get the AncestrySegment object associated with the given position.
+            Using a floating-point value will perform a check in centimorgan,
+            and using an integer value will perform a check in basepairs.
+            If you want to access the nth AncestrySegment from the underlying
+            list, then you must do so directly, via a.segments[n], where a is a
+            Chromosome instance.
+            """
+        hit = je.flip(filter)(self.segments,
+                lambda s: index in s)
+        if len(hit) > 1:
+            raise ValueError("inconsistency: more than one AncestrySegment "
+            "contains the given position.")
+        elif not hit:
+            raise IndexError("cannot find the given position in this "
+                    "chromosome.")
+        else:
+            return hit[0]
+
+    def as_switch_points(self):
+        """ Represent the internal list of AncestrySegment objects as a list of
+            ``switch-points'', which describes how the ancestry fluctuates
+            along the chromosome.
+
+            Since Chromosome objects should not be mutated, this function
+            performs memoization of its return value: subsequent calls will run
+            in constant time.
+            """
+        if self.switches is not None:
+            return self.switches
+
+        switches = []
+        for (left, right) in je.ipairs(self.segments):
+            switches.append(SwitchPoint(left, right))
+        self.switches = switches # memoize
+        return switches
+
+_BED_FILE_REGEX_STR = "T(\d+)_(A|B)_cM\.bed"
+
 class Individual(object):
     """ The complete ancestry information of one individual.
         This class simply wraps around a dictionary relating haplotype codes
@@ -279,13 +420,13 @@ class Individual(object):
         present there.
         Static methods are provided by this class to facilitate parsing the
         bed files that describe the local ancestry of the individual.
-        Methods are also provided for writing out bed files. """
+        Methods are also provided for writing out bed files.
+        """
 
     # Example bed file name: T161269150_A_cM.bed
     # capture #1 is the name of the individual
     # capture #2 is the haplotype that this bed file concerns itself with
-    _BED_FILE_REGEX_STR = "T(\d+)_(A|B)_cM\.bed"
-    BED_FILE_REGEX = re.compile(Individual._BED_FILE_REGEX_STR)
+    BED_FILE_REGEX = re.compile(_BED_FILE_REGEX_STR)
 
     @staticmethod
     def _ancestry_pre_to_string(ancestry_pre):
@@ -293,8 +434,9 @@ class Individual(object):
             AncestrySegment objects, into a string, spanning multiple lines,
             that would constitute a valid bed file.
 
-            Law
+            Law: something
             """
+        return NotImplemented # TODO
 
     @staticmethod
     def _decorate_name(individual_name):
@@ -333,7 +475,7 @@ class Individual(object):
             second must yield the haplotype identifier.
             """
         if regex is None:
-            regex = Individual._BED_FILE_REGEX_STR
+            regex = _BED_FILE_REGEX_STR
             prog = Individual.BED_FILE_REGEX
         else:
             prog = re.compile(regex)
@@ -457,3 +599,135 @@ class Individual(object):
     def __getitem__(self, i):
         """ Simply, a wrapper around the inner dict's __getitem__ function. """
         return self.ancestries[i]
+
+    def shared_ancestry_with(self, other):
+        """ For each haplotype, determine an interval along which this
+            Individual has the same ancestry as another Individual.
+
+            Law: this computation is commutative.
+                 If A and B are instances of Individual, then
+                 A.shared_ancestry_with(B) == B.shared_ancestry_with(A)
+            """
+        haplotype_codes = self.ancestries.keys()
+        # pairs will be a list of two tuples, each tuple is
+        # (self's ancestry, other's ancestry) on the same haplotype.
+        pairs = zip(self.ancestries.values(), other.ancestries.values())
+        # TODO choose whether we compare against both haplotypes and pick the
+        # one that gives the most alikeness, or do we compare A with A, and B
+        # with B. For now I'll opt for the mirror solution: A with A, B with B.
+
+        shared = False
+
+        # haplo has the chromosome on the same haplotype for each individual.
+        # haplo[0] refers to the chromosome in haplotype N of individual 0
+        # (self), where N is the iteration number of this for loop.
+        for haplos in pairs:
+            # take the greatest of the two starting points, since we can't
+            # really compare where there's nothing there!
+            start_position = max(haplo[0].segments[0].interval_bp.start,
+                                 haplo[1].segments[0].interval_bp.start)
+
+            # take the smallest of the two end points, since there's no point
+            # in trying to check past there.
+            last_position = min(haplo[0].segments[-1].interval_bp.end,
+                                haplo[1].segments[-1].interval_bp.end)
+
+            position = start_position # we start at the beginning, of course
+
+            # but which segments does "the beginning" correspond to?
+            segment_counter = [haplos[0].segment_index_of(position),
+                               haplos[1].segment_index_of(position)]
+
+            # verify that the segments were found properly
+            if any(map(lambda x: x == -1, segment_counter)):
+                raise ValueError("could not match start position in one or "
+                        "more of the haplotypes")
+
+            regions = [] # we'll collect Interval instances here
+            region_start = -1 #some dummy initial values for these
+            region_end   = -1
+
+            # until one of the two chromosomes ends
+            while position < last_position:
+                # determine what the ancestries are for this iteration
+                my_anc    = haplo[0].segments[segment_counter[0]]
+                other_anc = haplo[1].segments[segment_counter[1]]
+
+                if shared: # if we are in a shared region
+                    if my_anc.code == other_anc.code: #if the codes match
+                        pass # then we remain in the shared region
+                    else: #the codes don't match
+                        shared = False # we exit the shared region
+                        region_end = position # we mark the end position
+                        regions.append(Interval(region_start, region_end))
+                else: # we are not in a shared region
+                    if my_anc.code == other_anc.code: #if the codes match
+                        shared = True # we enter the shared region
+                        region_start = position # we mark the start position
+                        if regions: # if there is at least one region so far
+                            # this condition is the same as the one above, so
+                            # if it fails, there is an inconsistency
+                            if region_end == -1
+                                raise ValueError("inconsistency: there are "
+                                        "shared regions, but the last end "
+                                        "position is the dummy initial value")
+                            # we check that the distance between the two
+                            # regions meets the cutoff requirement. If it does,
+                            # then we merge the last region with the one
+                            # beginning at this position.
+                            if (region_start - region_end >
+                                    AncestrySegment.DISTANCE_CUTOFF):
+                                # we set the start to that of the last region
+                                region_start = regions[-1].start
+                                del regions[-1] # remove the last region
+                            else: #i.e. the regions are distinct
+                                pass #no big deal.
+                        else: #there are no past regions
+                            pass #doesn't matter.
+                    else: #the ancestry codes don't match
+                        # doesn't matter since we aren't in a shared region now
+                        pass # we remain unchanged
+
+                # Now we need to figure out what to move the position to
+                # We're going to look at the next segment for each chromosome
+                # we're traversing, to see which next one begins the earliest.
+
+                #first, we get the next indices for each haplo
+                next_indices = map(je.succ, segment_counter)
+                # then, we associate each of these indices with the relevant
+                # via ``enumerate''. We then sort according to the lowest start
+                # position.
+                bests = sorted(list(enumerate(next_indices)),
+                        key=
+                        lambda i, j: haplos[i].segments[j].interval_bp.start)
+                best = bests[0] # we take the smallest value
+
+                # remember this is a tuple s.t. (the index of the haplo, the
+                # index for the segment)
+                haplo_index, segment_index = best # unpack the tuple
+
+                # assign the value we got to the relevant haplo
+                segment_counter[haplo_index] = segment_index
+
+                # actually assign the new position now
+                position = haplos[haplo_index].segments[segment_index].start
+            # end of the while loop
+
+            # now, ``regions'' has been populated. We need to smooth this list
+            # so that there remains only one segment.
+            def total_length(segments):
+                # Interval defines __len__ to give its size, so we can write
+                # the following fold.
+                return sum(map(len, segments))
+
+            if total_length(regions) > AncestrySegment.SMOOTH_CUTOFF:
+                # join all the regions together into the final region
+                final_region = Interval(regions[0].start, regions[-1].end)
+            else:
+                final_region = Interval.zero()
+
+            # TODO think about making it such that it's the caller of this
+            # method who must smooth the intervals, that way, maybe, it can do
+            # something more sophisticated, or do something that involves all
+            # the segments separately.
+            return final_region
