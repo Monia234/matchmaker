@@ -117,6 +117,21 @@ def partition(predicate, seq):
         (satisfy if predicate(elem) else fail).append(elem)
     return (satisfy, fail)
 
+def ipairs(seq):
+    """ Convert an arbitrary sequence S into a list of pairs Ps, such that each
+        element in Ps is of the form (S_i, S_i+1). Ps has length one less than
+        S. This will effectively duplicate N-2 elements of S, where N is the
+        length of S.
+        Note: The result is lazy. To get the strict version, use ``pairs''.
+        """
+    for (i, x) in enumerate(seq):
+        yield (x, seq[i+1])
+
+def succ(n):
+    """ Get the successor of a number, i.e. increment it, i.e. add one to it.
+        """
+    return n + 1
+
 imap_c      = curry2(imap)
 ifor_each   = flip(imap)
 ifor_each_c = curry2(ifor_each)
