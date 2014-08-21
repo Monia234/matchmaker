@@ -182,11 +182,11 @@ class AncestrySegment(object):
             AncestrySegment.from_string(as.to_string()) == as
         """
 
-    def __init__(self, ancestry_code, chromosome, interval_bp, interval_cm):
+    def __init__(self, code, chromosome, interval_bp, interval_cm):
         """ Constructor.
 
             Arguments:
-                ancestry_code (AncestryCode):
+                code (AncestryCode):
                     the code to use for this segment. one of the factory
                     methods from the AncestryCode class.
                 chromosome (int):
@@ -206,9 +206,8 @@ class AncestrySegment(object):
             """
         self.interval_bp = interval_bp
         self.interval_cm = interval_cm
-        self.ancestry_code
-        self.chromosome = (int if not isinstance(int, chromosome)
-                           else lambda x: x)(chromosome)
+        self.code = code
+        self.chromosome = int(chromosome)
 
     def to_string(self):
         """ Convert this AncestrySegment into a string that could stand be a
@@ -217,8 +216,36 @@ class AncestrySegment(object):
         return ("%d\t%d\t%d\t%s\t%f\t%f"
                 % (self.chromosome,
                    self.interval_bp.start, self.interval_bp.end,
-                   self.ancestry_code.name,
+                   self.code.name,
                    self.interval_cm.start, self.interval_cm.end))
+
+    def __contains__(self, value):
+        if isinstance(value, int):
+            return value in self.interval_bp
+        elif isinstance(value, float):
+            return value in self.interval_cm
+        else:
+            raise TypeError("cannot determine whether value of type ``%s'' "
+                    "is a member of an interval." % str(type(value)))
+
+    def __lt__(self, other):
+        """ Compare this segment to another. If this segment is on a lower
+            chromosome, it is automatically considered less than the other.
+            If it is ona higher chromosome, it is automatically considered not
+            less than the other one. If the chromosome numbers are the same,
+            then the intervals are compared according to the rules of interval
+            comparison described in the Interval class.
+            """
+        return (self.chromosome < other.chromosome or
+                (self.chromosome == other.chromosome and
+                 self.interval_bp < other.interval_bp and
+                 self.interval_cm < other.interval_cm))
+
+    def __eq__(self, other):
+        return (self.interval_cm == other.interval_cm and
+                self.interval_bp == other.interval_bp and # for consistency
+                self.code == other.code and
+                self.chromosome == other.chromosome)
 
     @staticmethod
     def from_string(input_string):
