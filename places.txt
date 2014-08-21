@@ -16,3 +16,12 @@ and have contents like:
 family    name      hap --        --        -   chr     start    end            extra data till end of line
 
 ibd.py parses these kinds of files no problem
+
+Now look where it says "hap". Those are the haplotypes involved in the
+segment! So I only need to check for common ancestry in those haplotypes, for
+those individuals.
+
+Mapping of the numbers in the GERMLINE output to the letters used in bed
+files.
+0 <-> A
+1 <-> B

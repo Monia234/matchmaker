@@ -22,3 +22,7 @@ and B: we need to test A_I and B_I against A_J and B_J, distributively (for a
 total of four tests). If it turns out that the commonality occurs between an A
 and a B, then that needs to be shown in the plot somehow, perhaps by a
 different tinting or something.
+
+ACTUALLY NO! I just have to check against the haplotypes for the IBD segment!
+The IBD file tells me which haplotypes are involved in the segment, so there's
+no point in checking the other haplotypes. See the locations file for details.
