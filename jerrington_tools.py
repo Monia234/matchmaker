@@ -132,6 +132,15 @@ def succ(n):
         """
     return n + 1
 
+def project_from(obj, attr):
+    """ Synonym for `getattr`. """
+    return getattr(obj, attr)
+
+project_from_c = curry2(project_from)
+
+project = flip(getattr)
+project_c = curry2(project)
+
 imap_c      = curry2(imap)
 ifor_each   = flip(imap)
 ifor_each_c = curry2(ifor_each)
