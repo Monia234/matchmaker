@@ -19,7 +19,7 @@ class IBDEntry:
             IDBEntry objects.
             """
         L = []
-        with maybe_gzip_open(path) as fileH:
+        with je.maybe_gzip_open(path) as fileH:
             for line in fileH:
                 L.append(IBDEntry.from_string(line))
         return L
@@ -60,7 +60,7 @@ class IBDEntry:
                         self.family[1], self.name[1], self.haplotype[1],
                         self.chromosome,
                         self.interval.start, self.interval.end,
-                        self.dat)
+                        self.dat))
 
     def __lt__(self, other):
         """ Compare this IBDEntry with another, on the basis of the length of

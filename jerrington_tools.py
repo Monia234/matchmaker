@@ -23,6 +23,7 @@
     """
 
 from itertools import imap
+import gzip
 
 def with_file(f, path, mode='r'):
     """ Run a function on a file handle, using a with-statement. Useful in lambdas. """
@@ -58,7 +59,7 @@ def compose(left, right, star=False):
     else:
         left_ = left
 
-    return lambda *args, **kwargs: left_(right_(*args, **kwargs))
+    return lambda *args, **kwargs: left_(right(*args, **kwargs))
 
 def curry2(function):
     """ Convert a function of two parameters into a function of the first
@@ -135,6 +136,12 @@ def succ(n):
 def project_from(obj, attr):
     """ Synonym for `getattr`. """
     return getattr(obj, attr)
+
+def maybe_gzip_open(filename, mode='rb'):
+    if filename[-2:] == "gz":
+        return gzip.open(filename, mode)
+    else:
+        return open(filename, mode)
 
 project_from_c = curry2(project_from)
 

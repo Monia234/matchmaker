@@ -202,7 +202,7 @@ class SwitchPoint(object):
             raise ValueError("cannot construct SwitchPoint across "
                     "chromosomes.")
         position_bp = (left.interval_bp.end + right.interval_bp.start) / 2
-        position_cm = (left.interval_cm.end = right.interval_cm.start) / 2
+        position_cm = (left.interval_cm.end + right.interval_cm.start) / 2
         return SwitchPoint(left.chromosome, position_bp, position_cm,
                 left.code, right.code)
 
@@ -499,8 +499,6 @@ class Individual(object):
                     raise ValueError("segments not sorted correctly.")
         return True
 
-    HAPLOTYPE_CODES = ["A", "B"]
-
     @staticmethod
     def bed_code_from_IBD(ibd_haplotype_code):
         """ bed files and IBD match files use different conventions for
@@ -562,16 +560,17 @@ class Individual(object):
         # To represent whether we are in a shared region.
         shared = False
 
-        haplos = (self[haplo_self], other[haplo_other])
+        haplos = (self[haplo_self][chromosome],
+                  other[haplo_other][chromosome])
 
         # haplo has the chromosome on the same haplotype for each individual.
-        # haplo[0] refers to the chromosome in haplotype N of individual 0
+        # haplo[0] refers to set of chromosomes in haplotype N of individual 0
         # (self), where N is the iteration number of this for loop.
 
         # take the greatest of the two starting points, since we can't
         # really compare where there's nothing there!
-        start_position = max(haplo[0].segments[0].interval_bp.start,
-                             haplo[1].segments[0].interval_bp.start)
+        start_position = max(haplos[0].segments[0].interval_bp.start,
+                             haplos[1].segments[0].interval_bp.start)
 
         # take the smallest of the two end points, since there's no point
         # in trying to check past there.
@@ -613,7 +612,7 @@ class Individual(object):
                     if regions: # if there is at least one region so far
                         # this condition is the same as the one above, so
                         # if it fails, there is an inconsistency
-                        if region_end == -1
+                        if region_end == -1:
                             raise ValueError("inconsistency: there are "
                                     "shared regions, but the last end "
                                     "position is the dummy initial value")

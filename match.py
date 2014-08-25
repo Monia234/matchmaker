@@ -103,7 +103,7 @@ class IBDAncestryMatch:
         # if it is determined that the IBD order is the opposite of the given
         # order
         if not all(imap(eq,
-                je.for_each(self.individuals, je.project_c("name"))
+                je.for_each(self.individuals, je.project_c("name")),
                 self.ibd_segment.name)):
             raise ValueError("the given IBD segment does not relate the given "
                     "individuals.")
@@ -124,8 +124,8 @@ class IBDAncestryMatch:
                 Whether the determined segment is nonempty.
             """
         self.shared_segment = self.individuals[0].shared_ancestry_with(individual2,
-                Individual.bed_code_from_ibd(ibd_segment.haplotype[0]),
-                Individual.bed_code_from_ibd(ibd_segment.haplotype[1]))
+                bed.Individual.bed_code_from_ibd(ibd_segment.haplotype[0]),
+                bed.Individual.bed_code_from_ibd(ibd_segment.haplotype[1]))
 
         return not self.is_empty()
 
