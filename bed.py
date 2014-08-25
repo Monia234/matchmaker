@@ -364,11 +364,10 @@ class Individual(object):
             The two decorated names are returned as a tuple.
             """
         underscore = "_".join
-        haplotype_codes = ["A", "B"]
 
         return tuple(map(
                 lambda code: underscore("T" + individual_name, code, "cM.bed"),
-                haplotype_codes))
+                Individual.HAPLOTYPE_CODES))
 
     @staticmethod
     def _ancestry_pre_from_lines(lines):
@@ -499,6 +498,26 @@ class Individual(object):
                         and not segment_j < segments_for_chromosome_i[j + 1]):
                     raise ValueError("segments not sorted correctly.")
         return True
+
+    HAPLOTYPE_CODES = ["A", "B"]
+
+    @staticmethod
+    def bed_code_from_IBD(ibd_haplotype_code):
+        """ bed files and IBD match files use different conventions for
+            haplotypes. This method will convert the IBD match notation into
+            the bed notation.
+            Specifically, IBD match files use the strings "0" and "1" (dotted
+            onto the individual name, e.g. 16128895.0), whereas bed files use
+            the strings "A" and "B".
+
+            Argument:
+                ibd_haplotype_code (single-character string):
+                    The code from an IBD match file, either "0" or "1", to
+                    convert to the bed file notation.
+            """
+        # Since the ibd haplotype code is just a number, we can parse it and
+        # use it to index a list of bed-style haplotype codes.
+        return Individual.HAPLOTYPE_CODES[int(ibd_haplotype_code)]
 
     def __init__(self, individual_name, ancestries):
         """ Construct an object that represents an individual, complete with
