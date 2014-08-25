@@ -527,6 +527,7 @@ class Individual(object):
             (usually "A" or "B") to an ancestry_pre object, which is a list of
             22 lists of AncestrySegments.
             """
+        self.name = individual_name
         self.ancestries = ancestries
 
     def __getitem__(self, i):
