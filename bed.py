@@ -92,6 +92,8 @@ class AncestrySegment(object):
         obey the following law:
 
             AncestrySegment.from_string(as.to_string()) == as
+
+        i.e. they are inverses of each other.
         """
 
     # How far apart must common-ancestry segments be to be considered distinct
