@@ -378,10 +378,16 @@ class Individual(object):
     @staticmethod
     def _ancestry_pre_from_lines(lines):
         ancestry_pre = list(repeat([], 22)) # create the chromosome buckets
+        # each line is one ancestry segment
         for segment in (AncestrySegment.from_string(line) for line in lines):
             # add that segment to the appropriate bucket.
-            ancestry_pre[segment.chromosome].append(segment)
-        return ancestry_pre
+            ancestry_pre[segment.chromosome - 1].append(segment)
+        # each bucket is one chromosome, so we construct the Chromosome
+        # instances
+        chromosomes = map(
+                lambda (i, v): Chromosome(i, v),
+                enumerate(ancestry_pre, 1))
+        return chromosomes
 
     @staticmethod
     def _id_data_from_filename(filename, regex=None):
@@ -538,7 +544,7 @@ class Individual(object):
         """ Simply, a wrapper around the inner dict's __getitem__ function. """
         return self.ancestries[i]
 
-    def shared_ancestry_with(self, other, haplo_self, haplo_other):
+    def shared_ancestry_with(self, other, haplo_self, haplo_other, chromosome):
         """ For each haplotype, determine an interval along which this
             Individual has the same ancestry as another Individual.
 

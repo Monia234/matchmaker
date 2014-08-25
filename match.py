@@ -19,7 +19,8 @@ class IBDAncestryMatch:
         """
 
     @staticmethod
-    def from_ibd_segment(ibd_segment, bed_dir, generate=False, robust=False):
+    def from_ibd_segment(ibd_segment, bed_dir, cache=True, generate=False,
+            robust=False):
         """ Construct an IBDAncestryMatch from only an IBD segment and a
             repository of bed files, optionally generating the shared ancestry
             segment, and optionally checking for robustness.
@@ -34,6 +35,11 @@ class IBDAncestryMatch:
                 bed_dir (path):
                     The path to the directory in which reside all the bed
                     files.
+                cache (boolean) (default: True):
+                    Whether to cache the loaded ancestry files for reuse,
+                    should a request for an individual's ancestry occur more
+                    than once. Otherwise, the ancestry is reloaded from disk,
+                    which will cause poor memory use.
                 generate (boolean) (default: False):
                     Whether to call the `compute` method on the newly-created
                     IBDAncestryMatch instance, which would generate the shared
@@ -55,8 +61,33 @@ class IBDAncestryMatch:
                 set the `cache` parameter to True, which will cause
                 newly-loaded ancestry data to be cached, and recalled later if
                 necessary.
+                The cache is especially useful since IBD information is saved
+                chromosome-wise, but ancestry data is stored individual-wise.
+                So when we're processing by chromosome, according to IBD
+                information for example, we only need information for
+                chromosome 1, at the beginning of the file, but we load the
+                whole file. So rather than reload the same individual 22 times
+                in total, caching allows us to save on space, overall.
             """
-        individuals = map(je.curry2(bed.Individual.from_dir_and_name)(bed_dir),
+        load_from_disk = je.curry2(bed.Individual.from_dir_and_name)(bed_dir)
+
+        def load_individual(name):
+            """ Function that will first try to load an individual from the
+                cache, and if that fails, load from disk, saving the loaded
+                individual in the cache. If the cache parameter is false, then
+                this function will always load from disk.
+                """
+            if not cache:
+                return load_from_disk(name)
+
+            try:
+                return ANCESTRY_DATA_CACHE[name]
+            except KeyError:
+                i = load_from_disk(name)
+                ANCESTRY_DATA_CACHE[name] = i
+                return i
+
+        individuals = map(load_individual,
                 ibd_segment.name)
         match = IBDAncestryMatch(ibd_segment, individuals)
         if generate:
