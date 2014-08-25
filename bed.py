@@ -342,6 +342,12 @@ class Individual(object):
     # capture #2 is the haplotype that this bed file concerns itself with
     BED_FILE_REGEX = re.compile(_BED_FILE_REGEX_STR)
 
+    # Codes used to refer to haplotypes in a bed file
+    # The index corresponding to the code is the value used in an IBD file
+    # to refer to that same haplotype. In other words, "A" is at index 0, and
+    # "0" is the haplotype code used in the IBD match file.
+    HAPLOTYPE_CODES = ["A", "B"]
+
     @staticmethod
     def _ancestry_pre_to_string(ancestry_pre):
         """ Convert an ancestry_pre object, i.e. a list of 22 lists of
