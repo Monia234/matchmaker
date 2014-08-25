@@ -600,134 +600,146 @@ class Individual(object):
         """ Simply, a wrapper around the inner dict's __getitem__ function. """
         return self.ancestries[i]
 
-    def shared_ancestry_with(self, other):
+    def shared_ancestry_with(self, other, haplo_self, haplo_other):
         """ For each haplotype, determine an interval along which this
             Individual has the same ancestry as another Individual.
+
+            Arguments:
+                other (Individual):
+                    The other Individual with whom the ancestry is compared.
+                haplo_self (haplotype code):
+                    Which haplotype, for this individual, should be examined.
+                haplo_other (haplotype code):
+                    Which haplotype, for the other individual, should be
+                    examined.
+
+            Note:
+                Recall that haplotype codes are the strings 'A' or 'B', used as
+                indices for the underlying ancestry information dict.
 
             Law: this computation is commutative.
                  If A and B are instances of Individual, then
                  A.shared_ancestry_with(B) == B.shared_ancestry_with(A)
             """
-        haplotype_codes = self.ancestries.keys()
         # pairs will be a list of two tuples, each tuple is
         # (self's ancestry, other's ancestry) on the same haplotype.
         pairs = zip(self.ancestries.values(), other.ancestries.values())
-        # TODO choose whether we compare against both haplotypes and pick the
-        # one that gives the most alikeness, or do we compare A with A, and B
-        # with B. For now I'll opt for the mirror solution: A with A, B with B.
 
+        # To represent whether we are in a shared region.
         shared = False
+
+        haplos = (self[haplo_self], other[haplo_other])
 
         # haplo has the chromosome on the same haplotype for each individual.
         # haplo[0] refers to the chromosome in haplotype N of individual 0
         # (self), where N is the iteration number of this for loop.
-        for haplos in pairs:
-            # take the greatest of the two starting points, since we can't
-            # really compare where there's nothing there!
-            start_position = max(haplo[0].segments[0].interval_bp.start,
-                                 haplo[1].segments[0].interval_bp.start)
 
-            # take the smallest of the two end points, since there's no point
-            # in trying to check past there.
-            last_position = min(haplo[0].segments[-1].interval_bp.end,
-                                haplo[1].segments[-1].interval_bp.end)
+        # take the greatest of the two starting points, since we can't
+        # really compare where there's nothing there!
+        start_position = max(haplo[0].segments[0].interval_bp.start,
+                             haplo[1].segments[0].interval_bp.start)
 
-            position = start_position # we start at the beginning, of course
+        # take the smallest of the two end points, since there's no point
+        # in trying to check past there.
+        last_position = min(haplo[0].segments[-1].interval_bp.end,
+                            haplo[1].segments[-1].interval_bp.end)
 
-            # but which segments does "the beginning" correspond to?
-            segment_counter = [haplos[0].segment_index_of(position),
-                               haplos[1].segment_index_of(position)]
+        position = start_position # we start at the beginning, of course
 
-            # verify that the segments were found properly
-            if any(map(lambda x: x == -1, segment_counter)):
-                raise ValueError("could not match start position in one or "
-                        "more of the haplotypes")
+        # but which segments does "the beginning" correspond to?
+        segment_counter = [haplos[0].segment_index_of(position),
+                           haplos[1].segment_index_of(position)]
 
-            regions = [] # we'll collect Interval instances here
-            region_start = -1 #some dummy initial values for these
-            region_end   = -1
+        # verify that the segments were found properly
+        if any(map(lambda x: x == -1, segment_counter)):
+            raise ValueError("could not match start position in one or "
+                    "more of the haplotypes")
 
-            # until one of the two chromosomes ends
-            while position < last_position:
-                # determine what the ancestries are for this iteration
-                my_anc    = haplo[0].segments[segment_counter[0]]
-                other_anc = haplo[1].segments[segment_counter[1]]
+        regions = [] # we'll collect Interval instances here
+        region_start = -1 #some dummy initial values for these
+        region_end   = -1
 
-                if shared: # if we are in a shared region
-                    if my_anc.code == other_anc.code: #if the codes match
-                        pass # then we remain in the shared region
-                    else: #the codes don't match
-                        shared = False # we exit the shared region
-                        region_end = position # we mark the end position
-                        regions.append(Interval(region_start, region_end))
-                else: # we are not in a shared region
-                    if my_anc.code == other_anc.code: #if the codes match
-                        shared = True # we enter the shared region
-                        region_start = position # we mark the start position
-                        if regions: # if there is at least one region so far
-                            # this condition is the same as the one above, so
-                            # if it fails, there is an inconsistency
-                            if region_end == -1
-                                raise ValueError("inconsistency: there are "
-                                        "shared regions, but the last end "
-                                        "position is the dummy initial value")
-                            # we check that the distance between the two
-                            # regions meets the cutoff requirement. If it does,
-                            # then we merge the last region with the one
-                            # beginning at this position.
-                            if (region_start - region_end >
-                                    AncestrySegment.DISTANCE_CUTOFF):
-                                # we set the start to that of the last region
-                                region_start = regions[-1].start
-                                del regions[-1] # remove the last region
-                            else: #i.e. the regions are distinct
-                                pass #no big deal.
-                        else: #there are no past regions
-                            pass #doesn't matter.
-                    else: #the ancestry codes don't match
-                        # doesn't matter since we aren't in a shared region now
-                        pass # we remain unchanged
+        # until one of the two chromosomes ends
+        while position < last_position:
+            # determine what the ancestries are for this iteration
+            my_anc    = haplo[0].segments[segment_counter[0]]
+            other_anc = haplo[1].segments[segment_counter[1]]
 
-                # Now we need to figure out what to move the position to
-                # We're going to look at the next segment for each chromosome
-                # we're traversing, to see which next one begins the earliest.
+            if shared: # if we are in a shared region
+                if my_anc.code == other_anc.code: #if the codes match
+                    pass # then we remain in the shared region
+                else: #the codes don't match
+                    shared = False # we exit the shared region
+                    region_end = position # we mark the end position
+                    regions.append(Interval(region_start, region_end))
+            else: # we are not in a shared region
+                if my_anc.code == other_anc.code: #if the codes match
+                    shared = True # we enter the shared region
+                    region_start = position # we mark the start position
+                    if regions: # if there is at least one region so far
+                        # this condition is the same as the one above, so
+                        # if it fails, there is an inconsistency
+                        if region_end == -1
+                            raise ValueError("inconsistency: there are "
+                                    "shared regions, but the last end "
+                                    "position is the dummy initial value")
+                        # we check that the distance between the two
+                        # regions meets the cutoff requirement. If it does,
+                        # then we merge the last region with the one
+                        # beginning at this position.
+                        if (region_start - region_end >
+                                AncestrySegment.DISTANCE_CUTOFF):
+                            # we set the start to that of the last region
+                            region_start = regions[-1].start
+                            del regions[-1] # remove the last region
+                        else: #i.e. the regions are distinct
+                            pass #no big deal.
+                    else: #there are no past regions
+                        pass #doesn't matter.
+                else: #the ancestry codes don't match
+                    # doesn't matter since we aren't in a shared region now
+                    pass # we remain unchanged
 
-                #first, we get the next indices for each haplo
-                next_indices = map(je.succ, segment_counter)
-                # then, we associate each of these indices with the relevant
-                # via ``enumerate''. We then sort according to the lowest start
-                # position.
-                bests = sorted(list(enumerate(next_indices)),
-                        key=
-                        lambda i, j: haplos[i].segments[j].interval_bp.start)
-                best = bests[0] # we take the smallest value
+            # Now we need to figure out what to move the position to
+            # We're going to look at the next segment for each chromosome
+            # we're traversing, to see which next one begins the earliest.
 
-                # remember this is a tuple s.t. (the index of the haplo, the
-                # index for the segment)
-                haplo_index, segment_index = best # unpack the tuple
+            #first, we get the next indices for each haplo
+            next_indices = map(je.succ, segment_counter)
+            # then, we associate each of these indices with the relevant
+            # via ``enumerate''. We then sort according to the lowest start
+            # position.
+            bests = sorted(list(enumerate(next_indices)),
+                    key=
+                    lambda i, j: haplos[i].segments[j].interval_bp.start)
+            best = bests[0] # we take the smallest value
 
-                # assign the value we got to the relevant haplo
-                segment_counter[haplo_index] = segment_index
+            # remember this is a tuple s.t. (the index of the haplo, the
+            # index for the segment)
+            haplo_index, segment_index = best # unpack the tuple
 
-                # actually assign the new position now
-                position = haplos[haplo_index].segments[segment_index].start
-            # end of the while loop
+            # assign the value we got to the relevant haplo
+            segment_counter[haplo_index] = segment_index
 
-            # now, ``regions'' has been populated. We need to smooth this list
-            # so that there remains only one segment.
-            def total_length(segments):
-                # Interval defines __len__ to give its size, so we can write
-                # the following fold.
-                return sum(map(len, segments))
+            # actually assign the new position now
+            position = haplos[haplo_index].segments[segment_index].start
+        # end of the while loop
 
-            if total_length(regions) > AncestrySegment.SMOOTH_CUTOFF:
-                # join all the regions together into the final region
-                final_region = Interval(regions[0].start, regions[-1].end)
-            else:
-                final_region = Interval.zero()
+        # now, ``regions'' has been populated. We need to smooth this list
+        # so that there remains only one segment.
+        def total_length(segments):
+            # Interval defines __len__ to give its size, so we can write
+            # the following fold.
+            return sum(map(len, segments))
 
-            # TODO think about making it such that it's the caller of this
-            # method who must smooth the intervals, that way, maybe, it can do
-            # something more sophisticated, or do something that involves all
-            # the segments separately.
-            return final_region
+        if total_length(regions) > AncestrySegment.SMOOTH_CUTOFF:
+            # join all the regions together into the final region
+            final_region = Interval(regions[0].start, regions[-1].end)
+        else:
+            final_region = Interval.zero()
+
+        # TODO think about making it such that it's the caller of this
+        # method who must smooth the intervals, that way, maybe, it can do
+        # something more sophisticated, or do something that involves all
+        # the segments separately.
+        return final_region
