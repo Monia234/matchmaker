@@ -9,6 +9,8 @@ class IBDEntry:
     """ Represents one entry of IDB between two individuals. Represents exactly
         one line of GERMLINE data.  This class defines __str__ to produce
         GERMLINE data.
+        IBDEntry instances support rich comparison, on the basis of the length
+        of the inner interval.
         """
 
     @staticmethod
@@ -41,7 +43,7 @@ class IBDEntry:
         self.name = (maybeint(name1), maybeint(name2))
         self.haplotype = (maybeint(hap1), maybeint(hap2))
         self.family = (fam1, fam2)
-        self.interval = Interval(maybeint(start), maybeint(end))
+        self.interval = je.Interval(maybeint(start), maybeint(end))
         self.dat = dat
 
     def is_involved(self, individual_name):
@@ -59,3 +61,9 @@ class IBDEntry:
                         self.chromosome,
                         self.interval.start, self.interval.end,
                         self.dat)
+
+    def __lt__(self, other):
+        """ Compare this IBDEntry with another, on the basis of the length of
+            the inner interval.
+            """
+        return len(self.interval) < len(other.interval)

@@ -147,3 +147,91 @@ with_file_f_c = curry2(with_file_f)
 for_file   = with_file_f
 for_file_c = curry2(for_file)
 
+class IntervalOperationError(Exception):
+    pass
+
+class Interval(object):
+    """ Represents a (closed) interval, providing the interface for a
+        non-iterable container. The type of the underlying values is
+        irrelevant, provided that values of that type are totally ordered and
+        have a sensible implementation of subtraction.
+
+        Two Interval objects are considered equal if they have the same start
+        and end points. An Interval A is considered less than another Interval
+        B if A's end point is less than B's start point. The converse applies
+        to a greater-than comparison. If the Intervals overlap, then the
+        ordering comparisons will raise IntervalOperationError.
+
+        Intervals are said to be _adjacent_ if the start point of one is equal
+        to the end point of the other, or vice-versa. In the case of adjacent
+        intervals, they can be straightforwardly joined into a larger one.
+        """
+
+    def __init__(self, start, end):
+        """ Construct an Interval with the given start and end points. """
+        self.start = start
+        self.end = end
+
+    @staticmethod
+    def zero():
+        """ Return an interval with zero length. """
+        return Interval(0, 0)
+
+    @staticmethod
+    def from_tuple(tup):
+        """ Construct an interval object from a tuple. """
+        start, end = tup
+        return Interval(start, end)
+
+    def is_empty(self):
+        return len(self) == 0
+
+    def to_tuple(self):
+        """ Convert this interval into a tuple. """
+        return (self.start, self.end)
+
+    def is_adjacent_to(self, other):
+        """ Decide whether this interval is adjacent to another one.
+            Because intervals are closed, adjacency of intervals implies that
+            they overlap. """
+        return self.start == other.end or other.start == self.end
+
+    def joined_to(self, other):
+        """ Return a new Interval that is the union of this one and another
+            one, if the two intervals are adjacent. If they are not adjacent,
+            an IntervalOperationError is raised.
+            """
+        if self.is_adjacent_to(other):
+            return Interval(
+                    min(self.start, other.start), max(self.end, other.end))
+        else:
+            raise IntervalOperationError("Trying to join disjoint intervals.")
+
+    def overlaps(self, other):
+        return (self.start in other or self.end in other
+             or other.start in self or other.end in self)
+
+    def is_disjoint_with(self, other):
+        """ The negation of `overlaps`. """
+        return not self.overlaps(other)
+
+    def gap_to(self, other):
+        """ Construct a new interval that represents the space between this
+            interval and another one. If the two intervals are overlapping, a
+            zero-length interval is constructed.
+            """
+        return (Interval.zero() if self.overlaps(other)
+                else (Interval(self.end, other.start) if self < other
+                      else Interval(other.start, self.end)
+                     )
+               )
+
+    def __contains__(self, value):
+        """ Determine whether the given value is contained within the interval.
+            """
+        return self.start <= value and value <= self.end
+
+    def __len__(self):
+        """ Calculate the length of the interval. """
+        return self.end - self.start
+
