@@ -217,7 +217,7 @@ class AncestrySegment(object):
         self.chromosome = int(chromosome)
 
     def to_string(self):
-        """ Convert this AncestrySegment into a string that could stand be a
+        """ Convert this AncestrySegment into a string that could stand as a
             line in a .bed file.
             """
         return ("%d\t%d\t%d\t%s\t%f\t%f"
