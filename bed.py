@@ -369,10 +369,11 @@ class Individual(object):
 
             The two decorated names are returned as a tuple.
             """
-        underscore = "_".join
+        underscore = je.unsplat("_".join)
 
         return tuple(map(
-                lambda code: underscore("T" + individual_name, code, "cM.bed"),
+                lambda code: underscore("T" + str(individual_name), code,
+                        "cM.bed"),
                 Individual.HAPLOTYPE_CODES))
 
     @staticmethod
