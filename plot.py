@@ -24,11 +24,20 @@ make_ibd_path = lambda i: path.join(IBD_DIR,
 def main(args):
     ibd_chromosomes = map(
             j.compose(ibd.IBDEntry.from_GERMLINE, make_ibd_path),
-            xrange(1, 2)) # 1 to 22
+            xrange(1, 2)) # 1 to 2 for testing
 
-    matches = map(
-            match.IBDAncestryMatch
+    flipcurry2 = j.compose(j.curry2, j.flip)
 
+    match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
+    my_from_ibd_segment = lambda x, y: match_from_ibd_segment__(
+            x, y, generate=True)
+
+    match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(BED_DIR)
+
+    # now match_from_ibd_segment is a unary function that takes one IBDEntry
+    # instance and produces from it
+
+    matches = map(j.map_c(match_from_ibd_segment), ibd_chromosomes)
 
 if __name__ == "__main__":
     main(args)
