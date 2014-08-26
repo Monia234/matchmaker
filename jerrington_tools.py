@@ -143,6 +143,27 @@ def maybe_gzip_open(filename, mode='rb'):
     else:
         return open(filename, mode)
 
+# The following two functions are composable generalization of non-kwarg
+# star-args.
+
+def splat(fun):
+    """ From a function of many arguments, construct a function of one
+        collection.
+        This function's inverse is `unsplat`.
+        """
+    return lambda args: fun(*args)
+
+def unsplat(fun):
+    """ From a function of one collection, construct a function of many
+        arguments.
+        This function's inverse is `splat`.
+        """
+    return lambda *args: fun(args)
+
+def supply(fun, kwargs):
+    """ Supply a number of keyword-arguments to the given function. """
+    return lambda *args: fun(*args, **kwargs)
+
 project_from_c = curry2(project_from)
 
 project = flip(getattr)
