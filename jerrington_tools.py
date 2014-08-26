@@ -245,11 +245,20 @@ class Interval(object):
             raise IntervalOperationError("Trying to join disjoint intervals.")
 
     def overlaps(self, other):
+        """ Determine whether this interval overlaps another one.
+            This method is pure.
+            Let A and B be instances of Interval.
+                A overlaps B <=> B overlaps A
+            i.e. the overlaps relation is symmetrical.
+            """
         return (self.start in other or self.end in other
              or other.start in self or other.end in self)
 
     def is_disjoint_with(self, other):
-        """ The negation of `overlaps`. """
+        """ The negation of `overlaps`.
+            This method is pure.
+            This relation obeys all the same rules as `overlaps`.
+            """
         return not self.overlaps(other)
 
     def gap_to(self, other):
