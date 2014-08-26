@@ -24,11 +24,12 @@ make_ibd_path = lambda i: path.join(IBD_DIR,
 def main(args):
     ibd_chromosomes = map(
             j.compose(ibd.IBDEntry.from_GERMLINE, make_ibd_path),
-            xrange(1, 2)) # 1 to 2 for testing
+            xrange(1, 2)) # just chromosome 1 for testing
 
     flipcurry2 = j.compose(j.curry2, j.flip)
 
     match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
+    my_from_ibd_segment = j.supply(match_from_ibd_segment, {"generate":True})
     my_from_ibd_segment = lambda x, y: match_from_ibd_segment__(
             x, y, generate=True)
 

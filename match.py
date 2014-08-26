@@ -154,9 +154,13 @@ class IBDAncestryMatch:
             Returns (boolean):
                 Whether the determined segment is nonempty.
             """
-        self.shared_segment = self.individuals[0].shared_ancestry_with(individual2,
-                bed.Individual.bed_code_from_ibd(ibd_segment.haplotype[0]),
-                bed.Individual.bed_code_from_ibd(ibd_segment.haplotype[1]))
+        self.shared_segment = self.individuals[0].shared_ancestry_with(
+                self.individuals[1],
+                bed.Individual.bed_code_from_IBD(
+                    self.ibd_segment.haplotype[0]),
+                bed.Individual.bed_code_from_IBD(
+                    self.ibd_segment.haplotype[1]),
+                self.ibd_segment.chromosome)
 
         return not self.is_empty()
 

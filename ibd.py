@@ -40,8 +40,8 @@ class IBDEntry:
             return d if type(d) == int else int(d)
 
         self.chromosome = maybeint(chr)
-        self.name = (maybeint(name1), maybeint(name2))
-        self.haplotype = (maybeint(hap1), maybeint(hap2))
+        self.name = (name1, name2)
+        self.haplotype = map(maybeint, [hap1, hap2])
         self.family = (fam1, fam2)
         self.interval = je.Interval(maybeint(start), maybeint(end))
         self.dat = dat
