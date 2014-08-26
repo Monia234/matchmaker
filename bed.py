@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
-from functools import total_ordering
-from itertools import izip, repeat
+from functools  import total_ordering
+from itertools  import izip, repeat, imap
+from operator   import eq
+
 import re
+import os
 
 import jerrington_tools as je
 
@@ -275,7 +278,7 @@ class Chromosome(object):
         if number != segments[0].chromosome:
             raise ValueError("one or more segments given do not match the "
                     "given chromosome number.")
-        Chromosome.check_ancestry_segments(segments),
+        Chromosome.check_ancestry_segments(number, segments),
         self.segments = segments
         self.switches = None # the memoized result of as_switch_points
 
@@ -378,13 +381,14 @@ class Individual(object):
 
     @staticmethod
     def _ancestry_pre_from_lines(lines):
-        ancestry_pre = list(repeat([], 22)) # create the chromosome buckets
+        ancestry_pre = map(lambda _: [], xrange(22))
         # each line is one ancestry segment
-        for segment in (AncestrySegment.from_string(line) for line in lines):
+        for segment in imap(AncestrySegment.from_string, lines):
             # add that segment to the appropriate bucket.
             ancestry_pre[segment.chromosome - 1].append(segment)
         # each bucket is one chromosome, so we construct the Chromosome
         # instances
+
         chromosomes = map(
                 lambda (i, v): Chromosome(i, v),
                 enumerate(ancestry_pre, 1))
@@ -434,12 +438,13 @@ class Individual(object):
         # anymore
         paths = [path_to_bed_a, path_to_bed_b]
         # create a helper function since we'll be mapping over the paths a lot
-        for_each_path = for_each_c(paths)
+        for_each_path = je.for_each_c(paths)
 
         # Individual.id_data_from_filename takes just the filename, but we have
         # full paths, so we construct a function that will parse a full path.
         id_data_from_path = je.compose(
-                I._id_data_from_filename, path.basename)
+                I._id_data_from_filename, os.path.basename)
+
 
         # Parse the paths to extract the name and haplotype information
         namehaps = for_each_path(id_data_from_path) # :: [(name, hap)]
@@ -467,7 +472,7 @@ class Individual(object):
         # I._ancestry_pre_from_lines :: lines -> ancestry_pre
         # V :: path -> ancestry_pre
         load_ancestry_pre_from_path = je.compose(
-                I._ancestry_pre_from_lines, je.with_file_c(file_as_lines))
+                I._ancestry_pre_from_lines, je.with_file_c(je.file_as_lines))
         ancestry_pres = for_each_path(load_ancestry_pre_from_path)
 
         # the following will throw if there're any issues with either of the
@@ -501,7 +506,7 @@ class Individual(object):
             If a criterion is not met, then a ValueError is raised with an
             appropriate message.
             """
-        for (i, segments_for_chromosome_i) in enumerate(ancestry):
+        for (i, segments_for_chromosome_i) in enumerate(ancestry_pre):
             for (j, segment_j) in enumerate(segments_for_chromosome_i):
                 if segment_j.chromosome - 1 != i:
                     raise ValueError("segment with chromosome number %d found"
@@ -576,6 +581,8 @@ class Individual(object):
         haplos = (self[haplo_self][chromosome],
                   other[haplo_other][chromosome])
 
+        haplo_sizes = map(lambda hap: len(hap.segments), haplos)
+
         # haplo has the chromosome on the same haplotype for each individual.
         # haplo[0] refers to set of chromosomes in haplotype N of individual 0
         # (self), where N is the iteration number of this for loop.
@@ -587,8 +594,8 @@ class Individual(object):
 
         # take the smallest of the two end points, since there's no point
         # in trying to check past there.
-        last_position = min(haplo[0].segments[-1].interval_bp.end,
-                            haplo[1].segments[-1].interval_bp.end)
+        last_position = min(haplos[0].segments[-1].interval_bp.end,
+                            haplos[1].segments[-1].interval_bp.end)
 
         position = start_position # we start at the beginning, of course
 
@@ -608,8 +615,8 @@ class Individual(object):
         # until one of the two chromosomes ends
         while position < last_position:
             # determine what the ancestries are for this iteration
-            my_anc    = haplo[0].segments[segment_counter[0]]
-            other_anc = haplo[1].segments[segment_counter[1]]
+            my_anc    = haplos[0].segments[segment_counter[0]]
+            other_anc = haplos[1].segments[segment_counter[1]]
 
             if shared: # if we are in a shared region
                 if my_anc.code == other_anc.code: #if the codes match
@@ -652,12 +659,26 @@ class Individual(object):
 
             #first, we get the next indices for each haplo
             next_indices = map(je.succ, segment_counter)
+
+            # We check whether we've reached the end of a chromosome.
+            if any(imap(eq,
+                    haplo_sizes,
+                    next_indices)):
+                # If so, then we need to exit the loop
+                # We need to make sure that if we're in a shared region, then
+                # we close it off.
+                if shared:
+                    shared = False
+                    region_end = last_position
+                    regions.append(je.Interval(region_start, region_end))
+                break
+
             # then, we associate each of these indices with the relevant
             # via ``enumerate''. We then sort according to the lowest start
             # position.
             bests = sorted(list(enumerate(next_indices)),
                     key=
-                    lambda i, j: haplos[i].segments[j].interval_bp.start)
+                    lambda (i, j): haplos[i].segments[j].interval_bp.start)
             best = bests[0] # we take the smallest value
 
             # remember this is a tuple s.t. (the index of the haplo, the
@@ -668,7 +689,9 @@ class Individual(object):
             segment_counter[haplo_index] = segment_index
 
             # actually assign the new position now
-            position = haplos[haplo_index].segments[segment_index].start
+            position = (haplos[haplo_index].
+                        segments[segment_index].
+                        interval_bp.start)
         # end of the while loop
 
         # now, ``regions'' has been populated. We need to smooth this list
