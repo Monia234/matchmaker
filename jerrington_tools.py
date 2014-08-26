@@ -272,3 +272,20 @@ class Interval(object):
         """ Calculate the length of the interval. """
         return self.end - self.start
 
+    def __lt__(self, other):
+        """ We impose a partial ordering on the inhabitants of the Interval
+            type, such that an Interval A is less than an Interval B if A's end
+            is less than B's start. Contrariwise, A is greater than B if A's
+            start is greater than B's end. If A and B are overlapping, then we
+            can make no comparison.
+            """
+        if self.overlaps(other):
+            raise ValueError("cannot order overlapping intervals.")
+        return self.end < other.start
+
+    def __gt__(self, other):
+        """ See __lt__. """
+        if self.overlaps(other):
+            raise ValueError("cannot order overlapping intervals.")
+        return self.start > other.end
+
