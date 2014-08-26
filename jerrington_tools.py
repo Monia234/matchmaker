@@ -102,10 +102,10 @@ def flip(function):
     return lambda x, y: function(y, x)
 
 def file_as_lines(handle):
-    """ Produce a generator from a file handle that yields successive lines
-        from the file, stripping the trailing newline.
+    """ Strictly read the entire file into a list of strings, one per line,
+        stripping the last character (the newline) from each.
         """
-    return (line[:-1] for line in handle)
+    return [line[:-1] for line in handle]
 
 def partition(predicate, seq):
     """ Separate a sequence into two, according to the satisfaction of a given
