@@ -52,8 +52,8 @@ class AncestryCode(object):
         """ Generate a Native American ancestry code. """
         return AncestryCode("NAT", AncestryCode.COLOR_YELLOW)
 
-    @staticmethod
-    def make_from_name(name):
+    @classmethod
+    def make_from_name(cls, name):
         """ Generate an ancestry code from the codename of the ancestry.
 
             Law: AC.make_EUR() == AC.make_from_name(AC.make_EUR().name)
@@ -62,11 +62,11 @@ class AncestryCode(object):
             An UnknownAncestryError is raised if an invalid codename is given.
             """
         if name == "EUR":
-            return make_EUR()
+            return cls.make_EUR()
         elif name == "NAT":
-            return make_NAT()
+            return cls.make_NAT()
         elif name == "AFR":
-            return make_AFR()
+            return cls.make_AFR()
         else:
             raise UnknownAncestryError()
 
