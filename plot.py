@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import sys
 from sys import argv as args
 
@@ -39,6 +41,8 @@ def main(project_dir):
     # instance and produces from it
 
     matches = map(j.map_c(match_from_ibd_segment), ibd_chromosomes)
+
+    map(j.compose(print, repr), matches)
 
 if __name__ == "__main__":
     if len(args) != 2:
