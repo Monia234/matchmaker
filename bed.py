@@ -288,6 +288,7 @@ class Chromosome(object):
                     "given chromosome number.")
         Chromosome.check_ancestry_segments(number, segments),
         self.segments = segments
+        self.number   = number
         self.switches = None # the memoized result of as_switch_points
 
     def segment_index_of(self, position):
