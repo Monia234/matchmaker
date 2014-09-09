@@ -59,10 +59,10 @@ class AncestryCode(object):
         return AncestryCode("NAT", AncestryCode.COLOR_YELLOW)
 
     @classmethod
-    def make_from_name(cls, name):
+    def from_name(cls, name):
         """ Generate an ancestry code from the codename of the ancestry.
 
-            Law: AC.make_EUR() == AC.make_from_name(AC.make_EUR().name)
+            Law: AC.make_EUR() == AC.from_name(AC.make_EUR().name)
                  where AC = AncestryCode
 
             An UnknownAncestryError is raised if an invalid codename is given.
@@ -196,7 +196,7 @@ class AncestrySegment(object):
                 f(x) for (f, x)
                      in izip([int, int, int, id, float, float], words)]
         return AncestrySegment(
-                AncestryCode.make_from_name(ancestry),
+                AncestryCode.from_name(ancestry),
                 chromosome,
                 je.Interval(start_bp, end_bp),
                 je.Interval(start_cm, end_cm))
