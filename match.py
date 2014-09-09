@@ -176,3 +176,8 @@ class IBDAncestryMatch:
             from smallest to largest.
             """
         return self.ibd_segment < other.ibd_segment
+
+    def __repr__(self):
+        return "IBDAncestryMatch(%s, %s, %s)" % (
+                repr(self.ibd_segment), repr(individuals),
+                repr(self.shared_segment))

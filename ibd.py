@@ -62,6 +62,12 @@ class IBDEntry:
                         self.interval.start, self.interval.end,
                         self.dat))
 
+    def __repr__(self):
+        return "IBDEntry(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
+                map(repr, (self.chromosome,) + self.name + self.haplotype
+                    + self.family + (self.interval.start, self.interval.end)
+                    + self.dat))
+
     def __lt__(self, other):
         """ Compare this IBDEntry with another, on the basis of the length of
             the inner interval.
