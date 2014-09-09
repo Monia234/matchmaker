@@ -181,6 +181,25 @@ class IBDAncestryMatch:
             """
         return self.ibd_segment < other.ibd_segment
 
+    def __gt__(self, other):
+        """ Compare this IBDAncestryMatch with another on the basis of their
+            IBD segments. IBD segments are compared on the basis of their
+            lengths.
+            Therefore, the default ordering for IBDAncestryMatch instances is
+            from smallest to largest.
+            """
+        return self.ibd_segment > other.ibd_segment
+
+    def __len__(self):
+        """ Simply wraps the length of the shared segment.
+            An exception is raised if the shared segment has not been computed
+            yet.
+            """
+        if self.shared_segment is None:
+            raise ValueError("Cannot get length of unevaluated match.")
+        else:
+            return len(self.shared_segment)
+
     def __repr__(self):
         return "IBDAncestryMatch(%s, %s, %s)" % (
                 repr(self.ibd_segment), repr(self.individuals),
