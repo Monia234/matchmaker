@@ -55,18 +55,19 @@ class IBDEntry:
 
     def __str__(self):
         """ Convert this IBD entry into a valid line of GERMLINE output. """
-        return ("{}\t{}.{}\t{}\t{}.{}\t{}\t{}\t{}\t{}"
-                .format(self.family[0], self.name[0], self.haplotype[0],
+        return "{}\t{}.{}\t{}\t{}.{}\t{}\t{}\t{}\t{}" \
+               .format(self.family[0], self.name[0], self.haplotype[0],
                         self.family[1], self.name[1], self.haplotype[1],
                         self.chromosome,
                         self.interval.start, self.interval.end,
-                        self.dat))
+                        self.dat)
 
     def __repr__(self):
-        return "IBDEntry(%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" % (
-                map(repr, (self.chromosome,) + self.name + self.haplotype
-                    + self.family + (self.interval.start, self.interval.end)
-                    + self.dat))
+        return "IBDEntry({}, '{}', '{}', '{}', '{}', '{}', '{}', {}, {}, '{}')" \
+               .format(self.chromosome, self.name[0], self.name[1],
+                       self.haplotype[0], self.haplotype[1], self.family[0],
+                       self.family[1], self.interval.start, self.interval.end,
+                       self.dat)
 
     def __lt__(self, other):
         """ Compare this IBDEntry with another, on the basis of the length of

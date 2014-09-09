@@ -183,5 +183,5 @@ class IBDAncestryMatch:
 
     def __repr__(self):
         return "IBDAncestryMatch(%s, %s, %s)" % (
-                repr(self.ibd_segment), repr(individuals),
+                repr(self.ibd_segment), repr(self.individuals),
                 repr(self.shared_segment))

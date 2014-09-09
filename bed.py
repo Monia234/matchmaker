@@ -41,7 +41,7 @@ class AncestryCode(object):
         return self.name == other.name
 
     def __repr__(self):
-        return self.name
+        return "AncestryCode.from_name('%s')" % (self.name,)
 
     @staticmethod
     def make_EUR():
@@ -175,7 +175,7 @@ class AncestrySegment(object):
                 self.chromosome == other.chromosome)
 
     def __repr__(self):
-        return "AncestrySegment(%s, %s, %s, %s, %s)" % (
+        return "AncestrySegment(%s, %s, %s, %s)" % tuple(
                 map(repr, [self.code, self.chromosome, self.interval_bp,
                            self.interval_cm]))
 
@@ -316,7 +316,8 @@ class Chromosome(object):
             return hit[0]
 
     def __repr__(self):
-        return "Chromosome(%s, %s)" % map(repr, [self.number, self.segments])
+        return "Chromosome(%s, %s)" % tuple(
+                map(repr, [self.number, self.segments]))
 
     def as_switch_points(self):
         """ Represent the internal list of AncestrySegment objects as a list of
@@ -562,7 +563,8 @@ class Individual(object):
         return self.ancestries[i]
 
     def __repr__(self):
-        return "Individual(%s, %s)" % map(repr, self.name, self.ancestries)
+        return "Individual(%s, %s)" % tuple(
+                map(repr, (self.name, self.ancestries)))
 
     def shared_ancestry_with(self, other, haplo_self, haplo_other, chromosome):
         """ For each haplotype, determine an interval along which this
