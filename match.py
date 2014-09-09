@@ -106,7 +106,7 @@ class IBDAncestryMatch:
         match.compute(robust=robust)
         return match
 
-    def __init__(self, ibd_segment, individuals):
+    def __init__(self, ibd_segment, individuals, shared_segment=None):
         """ Constructor.
 
             Arguments:
@@ -118,6 +118,9 @@ class IBDAncestryMatch:
                     Warning: the order in which the individuals is given in the
                     argument list must match the order in which their names
                     appear in the IBD entry.
+                shared_segment (jerrington_tools.Interval) (default: None):
+                    the interval over which the individuals have a common
+                    ancestry.
 
             Note:
                 The constructor does not automatically generate the
@@ -129,6 +132,7 @@ class IBDAncestryMatch:
 
         self.ibd_segment = ibd_segment
         self.individuals = individuals
+        self.chromosome  = ibd_segment.chromosome
 
         # TODO increase robustness by automatically switching the individuals
         # if it is determined that the IBD order is the opposite of the given
