@@ -22,8 +22,11 @@
             etc.
     """
 
+from __future__ import print_function
+
 from itertools import imap
 import gzip
+import sys
 
 def with_file(f, path, mode='r'):
     """ Run a function on a file handle, using a with-statement. Useful in lambdas. """
@@ -162,7 +165,8 @@ def unsplat(fun):
 
 def supply(fun, kwargs):
     """ Supply a number of keyword-arguments to the given function. """
-    return lambda *args: fun(*args, **kwargs)
+    return lambda *args, **kwargs2: fun(
+            *args, **dict(kwargs.items() + kwargs2.items()))
 
 project_from_c = curry2(project_from)
 
@@ -183,6 +187,9 @@ with_file_f_c = curry2(with_file_f)
 
 for_file   = with_file_f
 for_file_c = curry2(for_file)
+
+mkfprint = lambda x: supply(print, {"file":x})
+errprint = mkfprint(sys.stderr)
 
 class IntervalOperationError(Exception):
     pass
