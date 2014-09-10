@@ -29,7 +29,7 @@ def plot_matches(matches):
     def get_code_color(anc_code, inside_ibd):
         """ Get the color for the given ancestry code, with the opacity
             adjusted for whether we're inside an IBD region. """
-        return anc_code.color + ((1.0,) if inside_ibd else (0.5,))
+        return anc_code.color + ((255,) if inside_ibd else (128,))
 
     im = Image.new("RGBA", conf.FIGURE_SIZE, "white")
     draw = ImageDraw.Draw(im)
@@ -47,13 +47,15 @@ def plot_matches(matches):
     INDIVIDUAL_HEIGHT = ENTRY_HEIGHT / 2
 
     for (i, entry) in enumerate(matches):
-        def rebase_x(x):
-            return scale_x(x - entry.shared_segment.start)
         jt.errprint("ENTRY:", i)
         # the scaled width of this entry
         my_width = scale_x(len(entry))
         # the x origin for this entry
         my_x0    = conf.FIGURE_WIDTH / 2 - my_width / 2
+        def rebase_x(x):
+            """ Function to convert genetic positions in basepairs into screen
+                coordinates in pixels. """
+            return my_x0 + scale_x(x)
         # the chromosome of this entry (rebound to save space)
         my_chr   = entry.chromosome
         for (indiv_i, individual) in enumerate(entry.individuals):
@@ -66,15 +68,23 @@ def plot_matches(matches):
                     entry.ibd_segment.haplotype[indiv_i])
             # the ancestry segments on the IBD haplotype, on the IBD
             # chromosome, for this individual
-            segments = individual.ancestries[my_haplotype][my_chr]
+            my_chromosome = individual.ancestries[my_haplotype][my_chr]
+            segments = my_chromosome.segments
             # control variable: whether we are inside the IBD segment
             inside_ibd = False
-            for seg in segments:
-                def draw_seg(lower_bound, upper_bound, inside_ibd):
-                    draw.rectangle([my_x0 + lower_bound, my_y0,
-                        my_x0 + upper_bound, my_y0 + INDIVIDUAL_HEIGHT],
+            for (j, seg) in enumerate(segments):
+                # construct the drawing function for this segment
+                def draw_rect(upper_bound, lower_bound, inside_ibd):
+                    segment_width = upper_bound - lower_bound
+                    rect = Image.new("RGBA",
+                            (int(segment_width), int(INDIVIDUAL_HEIGHT)))
+                    rect_draw = ImageDraw.Draw(rect)
+                    rect_draw.rectangle([0, 0, segment_width, INDIVIDUAL_HEIGHT],
                         fill=get_code_color(seg.code, inside_ibd))
+                    im.paste(rect, (int(lower_bound), int(my_y0)), mask=rect)
 
+                # identify the width of the segment, accounting for possible
+                # IBD segment beginnings or ends within it.
                 lower_bound = rebase_x(seg.interval_bp.start)
                 if entry.ibd_segment.interval.start in seg:
                     jt.errprint("\t\tIBD segment starting in this segment.")
@@ -83,18 +93,28 @@ def plot_matches(matches):
                     jt.errprint("\t\tIBD segment ending in this segment.")
                     upper_bound = rebase_x(entry.ibd_segment.interval.end)
                 else:
-                    upperBound = rebase_x(seg.interval_bp.end)
-                draw_seg(lower_bound, upper_bound, inside_ibd)
-                if upper_bound < seg.interval_bp.end:
+                    upper_bound = rebase_x(seg.interval_bp.end)
+                    # the fact that upper_bound /= seg.interval_bp.end will be
+                    # used to determine that a cut was made in this segment.
+                    # The other portion of the segment will be drawn a bit
+                    # later.
+
+                jt.errprint("\t\tSEGMENT: #", j, ": (", lower_bound, ", ",
+                        upper_bound, ")", sep='')
+
+                # draw the rectangle
+                draw_rect(upper_bound, lower_bound, inside_ibd)
+
+                if upper_bound < rebase_x(seg.interval_bp.end):
                     inside_ibd = not inside_ibd # invert the state
                     # set out bounds to the second part of the segment
                     lower_bound = upper_bound
-                    upper_bound = seg.interval_bp.end
-                    draw_seg(lower_bound, upper_bound, inside_ibd)
+                    upper_bound = rebase_x(seg.interval_bp.end)
 
                     jt.errprint("\t\tSPLIT SEGMENT: #", j, ": (", lower_bound, ", ",
                         upper_bound, ")", sep='')
 
+                    draw_rect(upper_bound, lower_bound, inside_ibd)
     return im
 
 def n_most(seq, n, comp=op.lt):
