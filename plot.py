@@ -12,6 +12,7 @@ import bed
 import match
 
 import jerrington_tools as j
+jt = j
 
 import ibd_anc_plot_config as conf
 
@@ -48,6 +49,7 @@ def plot_matches(matches):
     for (i, entry) in enumerate(matches):
         def rebase_x(x):
             return scale_x(x - entry.shared_segment.start)
+        jt.errprint("ENTRY:", i)
         # the scaled width of this entry
         my_width = scale_x(len(entry))
         # the x origin for this entry
@@ -55,6 +57,7 @@ def plot_matches(matches):
         # the chromosome of this entry (rebound to save space)
         my_chr   = entry.chromosome
         for (indiv_i, individual) in enumerate(entry.individuals):
+            jt.errprint("\tINDIVIDUAL:", indiv_i)
             # the y origin for this individual
             my_y0    = (i * (ENTRY_HEIGHT + conf.INTER_ENTRY_MARGIN)
                      + indiv_i * INDIVIDUAL_HEIGHT)
@@ -73,10 +76,12 @@ def plot_matches(matches):
                         fill=get_code_color(seg.code, inside_ibd))
 
                 lower_bound = rebase_x(seg.interval_bp.start)
-                if entry.ibd_segment.start in seg:
-                    upper_bound = rebase_x(entry.ibd_segment.start)
-                elif entry.ibd_segment.end in seg:
-                    upper_bound = rebase_x(entry.ibd_segment.end)
+                if entry.ibd_segment.interval.start in seg:
+                    jt.errprint("\t\tIBD segment starting in this segment.")
+                    upper_bound = rebase_x(entry.ibd_segment.interval.start)
+                elif entry.ibd_segment.interval.end in seg:
+                    jt.errprint("\t\tIBD segment ending in this segment.")
+                    upper_bound = rebase_x(entry.ibd_segment.interval.end)
                 else:
                     upperBound = rebase_x(seg.interval_bp.end)
                 draw_seg(lower_bound, upper_bound, inside_ibd)
@@ -86,6 +91,10 @@ def plot_matches(matches):
                     lower_bound = upper_bound
                     upper_bound = seg.interval_bp.end
                     draw_seg(lower_bound, upper_bound, inside_ibd)
+
+                    jt.errprint("\t\tSPLIT SEGMENT: #", j, ": (", lower_bound, ", ",
+                        upper_bound, ")", sep='')
+
     return im
 
 def n_most(seq, n, comp=op.lt):
@@ -138,7 +147,17 @@ def main(project_dir):
         print("Found", len(matches), "matches")
 
         longest_matches = n_most(matches, 120, op.gt)
-        fig = plot_matches(longest_matches)
+
+        # a sanity check
+        for m in longest_matches:
+            for individual in m.individuals:
+                for (hcode, chromosomes) in individual.ancestries.items():
+                    for chromosome in chromosomes:
+                        for seg in chromosome.segments:
+                            assert(len(seg.interval_bp) > 0)
+
+        im = plot_matches(longest_matches)
+        im.save("%d.jpg" % chromosome_number, "PNG")
 
 if __name__ == "__main__":
     if len(args) != 2:
