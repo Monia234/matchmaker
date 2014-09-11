@@ -64,6 +64,8 @@ def compose(left, right, star=False):
 
     return lambda *args, **kwargs: left_(right(*args, **kwargs))
 
+c = compose # handy synonym
+
 def curry2(function):
     """ Convert a function of two parameters into a function of the first
         parameter, yielding another function, but of the second parameter.
@@ -167,6 +169,8 @@ def supply(fun, kwargs):
     """ Supply a number of keyword-arguments to the given function. """
     return lambda *args, **kwargs2: fun(
             *args, **dict(kwargs.items() + kwargs2.items()))
+
+compose_c = curry2(compose)
 
 project_from_c = curry2(project_from)
 
