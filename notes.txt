@@ -26,3 +26,20 @@ different tinting or something.
 ACTUALLY NO! I just have to check against the haplotypes for the IBD segment!
 The IBD file tells me which haplotypes are involved in the segment, so there's
 no point in checking the other haplotypes. See the locations file for details.
+
+
+
+
+It should be that in the IBD regions, the local ancestries match up very well, 
+since they have similar genotypes. Because the data is unphased, however, 
+the haplotypes in the IBD data may not match up with the ones from the 
+local ancestry data. Because of this the plots look nasty, and aren't very
+informative. I need to ask Soheil whether the local ancestry identification
+tried to do any corrections, or whether the IBD was performed from the output 
+of the local ancestry (how is the pipeline working exactly).
+
+Maybe change the plotting backend to produce eps files, so that they can
+nicely be embedded in latex.
+
+Also, there seems to be a bug currently, as sometimes the IBD region extends
+all the way to the right in the figure, despite being correctly aligned...

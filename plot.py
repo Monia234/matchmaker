@@ -34,7 +34,18 @@ def plot_matches(matches):
     im = Image.new("RGBA", conf.FIGURE_SIZE, "white")
     draw = ImageDraw.Draw(im)
 
-    WIDTH_SCALE = conf.FIGURE_WIDTH / float(len(matches[0]))
+    ibd_center = lambda m: (m.ibd_segment.interval.start +
+            m.ibd_segment.interval.end) / 2
+    shared_center = lambda m: (m.shared_segment.start +
+            m.shared_segment.end) / 2
+    delta = lambda m: shared_center(m) - ibd_center(m)
+
+    min_bp = min(imap(lambda m: m.shared_segment.start + delta(m), matches))
+    max_bp = max(imap(lambda m: m.shared_segment.end + delta(m), matches))
+    total_width = max_bp - min_bp
+    print("WIDTH: ", total_width)
+
+    WIDTH_SCALE = conf.FIGURE_WIDTH / float(total_width)
     def scale_x(x):
         return x * WIDTH_SCALE
 
@@ -49,72 +60,103 @@ def plot_matches(matches):
     for (i, entry) in enumerate(matches):
         jt.errprint("ENTRY:", i)
         # the scaled width of this entry
-        my_width = scale_x(len(entry))
-        # the x origin for this entry
-        my_x0    = conf.FIGURE_WIDTH / 2 - my_width / 2
-        def rebase_x(x):
-            """ Function to convert genetic positions in basepairs into screen
-                coordinates in pixels. """
-            return my_x0 + scale_x(x)
+        ibd_width_true = len(entry.ibd_segment.interval)
+        ibd_width = scale_x(len(entry.ibd_segment.interval))
+        jt.errprint("\tIBD WIDTH:", ibd_width_true, "->", ibd_width)
+
+        # where the starting point of the IBD segment needs to be drawn for it
+        # to be centered
+        ibd_x0    = conf.FIGURE_WIDTH / 2 - ibd_width / 2
+        ibd_start_x = scale_x(entry.ibd_segment.interval.start)
+        ibd_center_offset = ibd_x0 - ibd_start_x
+
+        jt.errprint("\tSEGMENT OFFSET:", ibd_center_offset)
+
+        # the ibd center offset needs to be added to all the positions, so that
+        # the ibd segment is properly centered in the figure.
+
         # the chromosome of this entry (rebound to save space)
         my_chr   = entry.chromosome
         for (indiv_i, individual) in enumerate(entry.individuals):
             jt.errprint("\tINDIVIDUAL:", indiv_i)
+
             # the y origin for this individual
             my_y0    = (i * (ENTRY_HEIGHT + conf.INTER_ENTRY_MARGIN)
                      + indiv_i * INDIVIDUAL_HEIGHT)
+
             # the haplotype code to use for this individual
             my_haplotype = bed.Individual.bed_code_from_IBD(
                     entry.ibd_segment.haplotype[indiv_i])
+
             # the ancestry segments on the IBD haplotype, on the IBD
             # chromosome, for this individual
             my_chromosome = individual.ancestries[my_haplotype][my_chr]
             segments = my_chromosome.segments
+
             # control variable: whether we are inside the IBD segment
             inside_ibd = False
             for (j, seg) in enumerate(segments):
                 # construct the drawing function for this segment
                 def draw_rect(upper_bound, lower_bound, inside_ibd):
-                    segment_width = upper_bound - lower_bound
+                    segment_width_true = upper_bound - lower_bound
+                    segment_width = scale_x(segment_width_true)
                     rect = Image.new("RGBA",
                             (int(segment_width), int(INDIVIDUAL_HEIGHT)))
                     rect_draw = ImageDraw.Draw(rect)
                     rect_draw.rectangle([0, 0, segment_width, INDIVIDUAL_HEIGHT],
                         fill=get_code_color(seg.code, inside_ibd))
-                    im.paste(rect, (int(lower_bound), int(my_y0)), mask=rect)
+                    xstart = int(scale_x(lower_bound) + ibd_center_offset)
+                    xend   = xstart + segment_width
+                    im.paste(rect,
+                            (xstart, int(my_y0)),
+                            mask=rect)
+                    return xstart, xend
 
                 # identify the width of the segment, accounting for possible
                 # IBD segment beginnings or ends within it.
-                lower_bound = rebase_x(seg.interval_bp.start)
-                if entry.ibd_segment.interval.start in seg:
+                lower_bound = seg.interval_bp.start
+                if entry.ibd_segment.interval.start in seg.interval_bp:
                     jt.errprint("\t\tIBD segment starting in this segment.")
-                    upper_bound = rebase_x(entry.ibd_segment.interval.start)
-                elif entry.ibd_segment.interval.end in seg:
+                    upper_bound = entry.ibd_segment.interval.start
+                elif entry.ibd_segment.interval.end in seg.interval_bp:
                     jt.errprint("\t\tIBD segment ending in this segment.")
-                    upper_bound = rebase_x(entry.ibd_segment.interval.end)
+                    upper_bound = entry.ibd_segment.interval.end
                 else:
-                    upper_bound = rebase_x(seg.interval_bp.end)
                     # the fact that upper_bound /= seg.interval_bp.end will be
                     # used to determine that a cut was made in this segment.
                     # The other portion of the segment will be drawn a bit
                     # later.
-
-                jt.errprint("\t\tSEGMENT: #", j, ": (", lower_bound, ", ",
-                        upper_bound, ")", sep='')
+                    upper_bound = seg.interval_bp.end
 
                 # draw the rectangle
-                draw_rect(upper_bound, lower_bound, inside_ibd)
+                (xstart, xend) = draw_rect(upper_bound, lower_bound, inside_ibd)
 
-                if upper_bound < rebase_x(seg.interval_bp.end):
-                    inside_ibd = not inside_ibd # invert the state
+                jt.errprint("\t\tSEGMENT: #", j, ": (", lower_bound, ", ",
+                        upper_bound, ") -> (", xstart, ", ", xend, ")", sep='')
+
+                # if the upper bound does not reach to the end of the segment,
+                # then we conclude that the segment was split due to the
+                # presence of an IBD segment boundary within it.
+                if upper_bound < seg.interval_bp.end:
+                    # this represents a change in whether we're inside the IBD
+                    inside_ibd = not inside_ibd # so we invert the state
                     # set out bounds to the second part of the segment
                     lower_bound = upper_bound
-                    upper_bound = rebase_x(seg.interval_bp.end)
 
-                    jt.errprint("\t\tSPLIT SEGMENT: #", j, ": (", lower_bound, ", ",
-                        upper_bound, ")", sep='')
+                    if entry.ibd_segment.interval.end in jt.Interval(
+                            lower_bound, seg.interval_bp.end):
+                        upper_bound = entry.ibd_segment.interval.end
+                    else:
+                        upper_bound = seg.interval_bp.end
 
-                    draw_rect(upper_bound, lower_bound, inside_ibd)
+                    (xstart, xend) = draw_rect(
+                            upper_bound, lower_bound, inside_ibd)
+
+                    if upper_bound < seg.interval_bp.end:
+                        inside_ibd = not inside_ibd
+                        lower_bound = upper_bound
+                        upper_bound = seg.interval_bp.end
+                        draw_rect(upper_bound, lower_bound, inside_ibd)
     return im
 
 def n_most(seq, n, comp=op.lt):
@@ -123,17 +165,16 @@ def n_most(seq, n, comp=op.lt):
         algorithms should be used instead.
         """
     outseq = list(seq) # copy the input sequence
-    def swap(a, b):
-        t = outseq[b]
-        outseq[b] = outseq[a]
-        outseq[a] = t
+    def swap(s, a, b):
+        t = s[b]
+        s[b] = s[a]
+        s[a] = t
 
-    s = outseq[0]
     for i in xrange(min(n, len(seq))):
-        v = seq[i]
+        v = outseq[i]
         for j in xrange(i + 1, len(outseq)):
             if comp(outseq[j], v):
-                swap(i, j)
+                swap(outseq, i, j)
                 break
     return outseq if n >= len(seq) else outseq[:n]
 
@@ -166,7 +207,11 @@ def main(project_dir):
             match_from_ibd_segment, ibd_chromosome_data))
         print("Found", len(matches), "matches")
 
-        longest_matches = n_most(matches, 120, op.gt)
+        # set to 10 for testing
+        longest_matches = sorted(
+                matches, key=lambda m: len(m.ibd_segment.interval))[-50:][::-1]
+
+        map(lambda m: print(len(m.ibd_segment.interval)), longest_matches)
 
         # a sanity check
         for m in longest_matches:
