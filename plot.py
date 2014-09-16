@@ -58,11 +58,11 @@ def plot_matches(matches):
     INDIVIDUAL_HEIGHT = ENTRY_HEIGHT / 2
 
     for (i, entry) in enumerate(matches):
-        jt.errprint("ENTRY:", i)
+        print("ENTRY:", i)
         # the scaled width of this entry
         ibd_width_true = len(entry.ibd_segment.interval)
         ibd_width = scale_x(len(entry.ibd_segment.interval))
-        jt.errprint("\tIBD WIDTH:", ibd_width_true, "->", ibd_width)
+        print("\tIBD WIDTH:", ibd_width_true, "->", ibd_width)
 
         # where the starting point of the IBD segment needs to be drawn for it
         # to be centered
@@ -70,7 +70,7 @@ def plot_matches(matches):
         ibd_start_x = scale_x(entry.ibd_segment.interval.start)
         ibd_center_offset = ibd_x0 - ibd_start_x
 
-        jt.errprint("\tSEGMENT OFFSET:", ibd_center_offset)
+        print("\tSEGMENT OFFSET:", ibd_center_offset)
 
         # the ibd center offset needs to be added to all the positions, so that
         # the ibd segment is properly centered in the figure.
@@ -78,7 +78,7 @@ def plot_matches(matches):
         # the chromosome of this entry (rebound to save space)
         my_chr   = entry.chromosome
         for (indiv_i, individual) in enumerate(entry.individuals):
-            jt.errprint("\tINDIVIDUAL:", indiv_i)
+            print("\tINDIVIDUAL:", indiv_i)
 
             # the y origin for this individual
             my_y0    = (i * (ENTRY_HEIGHT + conf.INTER_ENTRY_MARGIN)
@@ -103,6 +103,7 @@ def plot_matches(matches):
                     rect = Image.new("RGBA",
                             (int(segment_width), int(INDIVIDUAL_HEIGHT)))
                     rect_draw = ImageDraw.Draw(rect)
+                    # Draw the rectangle, getting the color form the anc code
                     rect_draw.rectangle([0, 0, segment_width, INDIVIDUAL_HEIGHT],
                         fill=get_code_color(seg.code, inside_ibd))
                     xstart = int(scale_x(lower_bound) + ibd_center_offset)
@@ -116,10 +117,10 @@ def plot_matches(matches):
                 # IBD segment beginnings or ends within it.
                 lower_bound = seg.interval_bp.start
                 if entry.ibd_segment.interval.start in seg.interval_bp:
-                    jt.errprint("\t\tIBD segment starting in this segment.")
+                    print("\t\tIBD segment starting in this segment.")
                     upper_bound = entry.ibd_segment.interval.start
                 elif entry.ibd_segment.interval.end in seg.interval_bp:
-                    jt.errprint("\t\tIBD segment ending in this segment.")
+                    print("\t\tIBD segment ending in this segment.")
                     upper_bound = entry.ibd_segment.interval.end
                 else:
                     # the fact that upper_bound /= seg.interval_bp.end will be
@@ -131,7 +132,7 @@ def plot_matches(matches):
                 # draw the rectangle
                 (xstart, xend) = draw_rect(upper_bound, lower_bound, inside_ibd)
 
-                jt.errprint("\t\tSEGMENT: #", j, ": (", lower_bound, ", ",
+                print("\t\tSEGMENT: #", j, ": (", lower_bound, ", ",
                         upper_bound, ") -> (", xstart, ", ", xend, ")", sep='')
 
                 # if the upper bound does not reach to the end of the segment,
