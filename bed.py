@@ -626,7 +626,8 @@ class Individual(object):
                     "more of the haplotypes")
 
         regions = [] # we'll collect Interval instances here
-        region_start = -1 #some dummy initial values for these
+
+        region_start = -1 # some dummy initial values for these
         region_end   = -1
 
         # until one of the two chromosomes ends
@@ -643,7 +644,7 @@ class Individual(object):
                     region_end = position # we mark the end position
                     regions.append(je.Interval(region_start, region_end))
             else: # we are not in a shared region
-                if my_anc.code == other_anc.code: #if the codes match
+                if my_anc.code == other_anc.code: # if the codes match
                     shared = True # we enter the shared region
                     region_start = position # we mark the start position
                     if regions: # if there is at least one region so far
