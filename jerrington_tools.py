@@ -195,6 +195,8 @@ for_file_c = curry2(for_file)
 mkfprint = lambda x: supply(print, {"file":x})
 errprint = mkfprint(sys.stderr)
 
+intround = compose(int, round)
+
 class IntervalOperationError(Exception):
     pass
 
