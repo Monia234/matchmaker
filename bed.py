@@ -107,7 +107,7 @@ class AncestrySegment(object):
     DISTANCE_CUTOFF = 100000
     # What must be the total length of a bunch of common-ancestry segments to
     # warrant merging them together.
-    SMOOTH_CUTOFF = 1000000
+    SMOOTH_CUTOFF = 5000000
 
     def __init__(self, code, chromosome, interval_bp, interval_cm):
         """ Constructor.
