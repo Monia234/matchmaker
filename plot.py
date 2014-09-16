@@ -179,7 +179,7 @@ def n_most(seq, n, comp=op.lt):
                 break
     return outseq if n >= len(seq) else outseq[:n]
 
-def main(project_dir):
+def main(project_dir, plot_name):
     global PROJECT_DIR
     PROJECT_DIR = project_dir
 
@@ -212,20 +212,22 @@ def main(project_dir):
         longest_matches = sorted(
                 matches, key=lambda m: len(m.ibd_segment.interval))[-50:][::-1]
 
-        map(lambda m: print(len(m.ibd_segment.interval)), longest_matches)
-
         # a sanity check
         for m in longest_matches:
+            assert(m.individuals)
             for individual in m.individuals:
+                assert(individual.ancestries)
                 for (hcode, chromosomes) in individual.ancestries.items():
+                    assert(chromosomes)
                     for chromosome in chromosomes:
+                        assert(chromosome.segments)
                         for seg in chromosome.segments:
                             assert(len(seg.interval_bp) > 0)
 
         im = plot_matches(longest_matches)
-        im.save("%d.jpg" % chromosome_number, "PNG")
+        im.save("%s-%d.png" % (plot_name, chromosome_number), "PNG")
 
 if __name__ == "__main__":
-    if len(args) != 2:
+    if len(args) != 3:
         raise ValueError("incorrect number of arguments")
-    main(args[1])
+    main(args[1], args[2])
