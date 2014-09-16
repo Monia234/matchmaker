@@ -62,7 +62,11 @@ def plot_matches(matches):
         # the scaled width of this entry
         ibd_width_true = len(entry.ibd_segment.interval)
         ibd_width = scale_x(len(entry.ibd_segment.interval))
-        print("\tIBD WIDTH:", ibd_width_true, "->", ibd_width)
+        (ibd_start_true, ibd_end_true) = entry.ibd_segment.to_tuple()
+        (ibd_start, ibd_end) = (scale_x(ibd_start_true), scale_x(ibd_end_true))
+        print("\tIBD: ", "(", ibd_start_true, ", ", ibd_end_true, ") -> (",
+                ibd_start, ", ", ibd_end, ") \n",
+                "\tIBD WIDTH: ", ibd_width_true, " -> ", ibd_width, sep='')
 
         # where the starting point of the IBD segment needs to be drawn for it
         # to be centered
