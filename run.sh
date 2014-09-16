@@ -2,4 +2,4 @@
 
 NAME="$(date +%F-%T)"
 
-python plot.py project "plots/$NAME" | tee "logs/${NAME}.log"
+python plot.py project "plots/$NAME" > "logs/${NAME}.log"
