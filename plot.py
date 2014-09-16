@@ -62,7 +62,7 @@ def plot_matches(matches):
         # the scaled width of this entry
         ibd_width_true = len(entry.ibd_segment.interval)
         ibd_width = scale_x(len(entry.ibd_segment.interval))
-        (ibd_start_true, ibd_end_true) = entry.ibd_segment.to_tuple()
+        (ibd_start_true, ibd_end_true) = entry.ibd_segment.interval.to_tuple()
         (ibd_start, ibd_end) = (scale_x(ibd_start_true), scale_x(ibd_end_true))
         print("\tIBD: ", "(", ibd_start_true, ", ", ibd_end_true, ") -> (",
                 ibd_start, ", ", ibd_end, ") \n",
