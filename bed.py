@@ -666,7 +666,7 @@ class Individual(object):
                         # regions meets the cutoff requirement. If it does,
                         # then we merge the last region with the one
                         # beginning at this position.
-                        if (region_start - region_end >
+                        if (region_start - region_end <
                                 AncestrySegment.DISTANCE_CUTOFF):
                             # we set the start to that of the last region
                             region_start = regions[-1].start
