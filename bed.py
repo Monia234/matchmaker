@@ -546,7 +546,7 @@ class Individual(object):
             """
         # Since the ibd haplotype code is just a number, we can parse it and
         # use it to index a list of bed-style haplotype codes.
-        return Individual.HAPLOTYPE_CODES[int(ibd_haplotype_code)]
+        return Individual.HAPLOTYPE_CODES[1 - int(ibd_haplotype_code)]
 
     def __init__(self, individual_name, ancestries):
         """ Construct an object that represents an individual, complete with
