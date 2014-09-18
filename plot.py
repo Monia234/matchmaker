@@ -94,6 +94,10 @@ def plot_matches(matches):
                        i * (ENTRY_HEIGHT + conf.INTER_ENTRY_MARGIN)
                      + indiv_i * INDIVIDUAL_HEIGHT)
 
+            # reset the last_x counter for each individual, unlike last_y which
+            # only needs to be reset per entry.
+            last_x = None
+
             # the haplotype code to use for this individual
             my_haplotype = bed.Individual.bed_code_from_IBD(
                     entry.ibd_segment.haplotype[indiv_i])
@@ -107,7 +111,7 @@ def plot_matches(matches):
             inside_ibd = False
             for (j, seg) in enumerate(segments):
                 # construct the drawing function for this segment
-                def draw_rect(upper_bound, lower_bound, inside_ibd):
+                def draw_rect(upper_bound, lower_bound, inside_ibd, last_x):
                     segment_width_true = upper_bound - lower_bound
                     segment_width = scale_x(segment_width_true)
                     rect = Image.new("RGBA",
@@ -118,7 +122,11 @@ def plot_matches(matches):
                     rect_draw.rectangle([0, 0, segment_width,
                         INDIVIDUAL_HEIGHT],
                         fill=get_code_color(seg.code, inside_ibd))
-                    xstart = jt.intround(scale_x(lower_bound) + ibd_center_offset)
+
+                    if last_x is not None:
+                        xstart = last_x
+                    else:
+                        xstart = jt.intround(scale_x(lower_bound) + ibd_center_offset)
                     xend   = jt.intround(xstart + segment_width)
                     im.paste(rect,
                             (xstart, my_y0),
@@ -145,8 +153,8 @@ def plot_matches(matches):
                     splitting = False
 
                 # draw the rectangle
-                rect = draw_rect(upper_bound, lower_bound, inside_ibd)
-
+                rect = draw_rect(upper_bound, lower_bound, inside_ibd, last_x)
+                last_x = rect[2] # the x-coordinate of the right side
                 last_y = rect[3] # set the last y to the bottom of this rect
 
                 print("\t\tSEGMENT #", j, ": (", lower_bound, ", ",
@@ -175,7 +183,9 @@ def plot_matches(matches):
                         upper_bound = seg.interval_bp.end
                         splitting = False
 
-                    rect2 = draw_rect(upper_bound, lower_bound, inside_ibd)
+                    rect2 = draw_rect(upper_bound, lower_bound, inside_ibd,
+                                      last_x)
+                    last_x = rect2[2]
 
                     print("\t\tSEGMENT #", j, ".b: (", lower_bound, ", ",
                             upper_bound, ") -> DRAW [",", ".join(map(str, rect2)),
@@ -185,7 +195,9 @@ def plot_matches(matches):
                         inside_ibd = not inside_ibd
                         lower_bound = upper_bound
                         upper_bound = seg.interval_bp.end
-                        rect3 = draw_rect(upper_bound, lower_bound, inside_ibd)
+                        rect3 = draw_rect(upper_bound, lower_bound, inside_ibd,
+                                          last_x)
+                        last_x = rect3[2]
 
                         print("\t\tSEGMENT #", j, ".c: (", lower_bound, ", ",
                                 upper_bound, ") -> DRAW [",", ".join(map(str, rect3)),
