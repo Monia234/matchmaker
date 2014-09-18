@@ -195,6 +195,7 @@ for_file_c = curry2(for_file)
 mkfprint = lambda x: supply(print, {"file":x})
 errprint = mkfprint(sys.stderr)
 
+# round a float into an int
 intround = compose(int, round)
 
 class IntervalOperationError(Exception):
