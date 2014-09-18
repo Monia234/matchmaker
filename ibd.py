@@ -25,6 +25,14 @@ class IBDEntry:
         return L
 
     @staticmethod
+    def ifrom_GERMLINE(handle):
+        """ Lazily parse GERMLINE output (possible gzipped) as a generator.
+            Since this function is a generator, the caller must handle opening
+            and closing the file"""
+        for line in handle:
+            yield IBDEntry.from_string(line)
+
+    @staticmethod
     def from_string(input_str):
         # Split up the input string according to the GERMLINE output format
         (fam1, id1hap, fam2, id2hap,
