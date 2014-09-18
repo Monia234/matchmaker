@@ -647,8 +647,6 @@ class Individual(object):
         region_start = -1 # some dummy initial values for these
         region_end   = -1
 
-        print("SHARED ANCESTRY:", self.name, "-", other.name)
-
         # until one of the two chromosomes ends
         while position < last_position:
             # determine what the ancestries are for this iteration
@@ -657,19 +655,15 @@ class Individual(object):
 
             if shared: # if we are in a shared region
                 if my_anc.code == other_anc.code: #if the codes match
-                    print("\tStaying in shared region.")
                     pass # then we remain in the shared region
                 else: #the codes don't match
                     shared = False # we exit the shared region
                     region_end = position # we mark the end position
                     regions.append(je.Interval(region_start, region_end))
-                    print("\tLeaving shared region:", region_start, "->",
-                            region_end)
             else: # we are not in a shared region
                 if my_anc.code == other_anc.code: # if the codes match
                     shared = True # we enter the shared region
                     region_start = position # we mark the start position
-                    print("\tEntering shared region:", region_start)
                     if regions: # if there is at least one region so far
                         # this condition is the same as the one above, so
                         # if it fails, there is an inconsistency
@@ -685,8 +679,6 @@ class Individual(object):
                                 AncestrySegment.DISTANCE_CUTOFF):
                             # we set the start to that of the last region
                             region_start = regions[-1].start
-                            print("\t\tMerging new shared region with "
-                                    "previous one.")
                             del regions[-1] # remove the last region
                         else: #i.e. the regions are distinct
                             pass #no big deal.
@@ -714,8 +706,6 @@ class Individual(object):
                     shared = False
                     region_end = last_position
                     regions.append(je.Interval(region_start, region_end))
-                    print("\tLeaving shared region:", region_start, "->",
-                            region_end)
                 break
 
             # then, we associate each of these indices with the relevant index
@@ -753,10 +743,6 @@ class Individual(object):
             final_region = je.Interval(regions[0].start, regions[-1].end)
         else:
             final_region = je.Interval.zero()
-
-        print("\tSHARED SEGMENT: ", final_region.start, " -> ", final_region.end,
-                "(", je.intround(shared_fraction * 100), " shared ancestry)",
-                sep='')
 
         # TODO think about making it such that it's the caller of this
         # method who must smooth the intervals, that way, maybe, it can do
