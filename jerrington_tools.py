@@ -223,8 +223,8 @@ class Interval(object):
         self.start = start
         self.end = end
 
-    @staticmethod
-    def zero():
+    @classmethod
+    def zero(_):
         """ Return an interval with zero length. """
         return Interval(0, 0)
 
@@ -268,6 +268,13 @@ class Interval(object):
         return (self.start in other or self.end in other
              or other.start in self or other.end in self)
 
+    def intersection(self, other):
+        if not self.overlaps(other):
+            return Interval.zero()
+        start = max(self.start, other.start)
+        end = min(self.end, other.end)
+        return Interval(start, end)
+
     def is_disjoint_with(self, other):
         """ The negation of `overlaps`.
             This method is pure.
@@ -285,6 +292,19 @@ class Interval(object):
                       else Interval(other.start, self.end)
                      )
                )
+
+    def is_superset(self, other):
+        """ Determine whether this interval fully contains another
+            interval.
+            """
+        return self.start <= other.start and self.end >= other.end
+
+    def is_subset(self, other):
+        """ Determine whether this interval is fully contained within another
+            interval.
+            """
+        return other.is_superset(self)
+
 
     def __repr__(self):
         return "Interval(%d, %d)" % (self.start, self.end)
@@ -314,4 +334,12 @@ class Interval(object):
         if self.overlaps(other):
             raise ValueError("cannot order overlapping intervals.")
         return self.start > other.end
+
+    def __eq__(self, other):
+        """ Check whether this interval is the equivalent to another interval.
+            Two sets are equal if and only if they have the same elements.
+            Therefore, for intervals, it suffices to check that they have the
+            same boundaries.
+            """
+        return self.start == other.start and self.end == other.end
 
