@@ -16,7 +16,7 @@ jt = j
 
 import ibd_anc_plot_config as conf
 
-from itertools import islice, imap
+from itertools import islice, imap, chain, ifilter
 import operator as op
 
 from PIL import Image, ImageDraw
@@ -246,17 +246,23 @@ def n_most(seq, n, comp=op.lt):
     return outseq if n >= len(seq) else outseq[:n]
 
 def main(project_dir, plot_name):
-    global PROJECT_DIR
     PROJECT_DIR = project_dir
 
+    # the datasets to use
     IBD_DIR = path.join(PROJECT_DIR,
-            "baharian_projects/HRS/data/dbGaP/fromRFMix/AfrAm/3_GERMLINE")
+            "baharian_projects/MergedData/phased/3_GERMLINE")
 
     BED_DIR = path.join(PROJECT_DIR,
             "barakatt_projects/HRS/results/HRS_AFRAM_20140609/outbed")
 
+    # the set of individuals in the HRS AfrAm
+    INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), path.join(
+            PROJECT_DIR,
+            "baharian_projects/HRS/data/AfricanAmericans/AfrAm.SubjID.list")))
+
+    # function to construct the path to the IBD date for a given chromosome
     make_ibd_path = lambda i: path.join(IBD_DIR,
-            "".join(["chr", str(i), ".IBD.match.gz"]))
+            "".join(["MERGED_chr", str(i), ".IBD.match.gz"]))
 
     # a utility function
     flipcurry2 = j.compose(j.curry2, j.flip)
@@ -267,31 +273,67 @@ def main(project_dir, plot_name):
     my_from_ibd_segment = j.supply(match_from_ibd_segment__, {"generate":True})
     match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(BED_DIR)
 
-    for chromosome_number in xrange(1, 2):
-        ibd_chromosome_data = ibd.IBDEntry.from_GERMLINE(
-                make_ibd_path(chromosome_number))
-        matches = filter(lambda x: len(x) > 0, imap(
-            match_from_ibd_segment, ibd_chromosome_data))
-        print("Found", len(matches), "matches")
+    def get_chromosome_data(handles):
+        """ Construct a generator to yield all the IBD entries for the
+            African-American HRS dataset. We are pulling Soheil's MergedData
+            dataset, so the GERMLINE output files need to be filtered to remove
+            entries from the other datasets.
 
-        # set to 10 for testing
-        longest_matches = sorted(
-                matches, key=lambda m: len(m.ibd_segment.interval))[-50:][::-1]
+            Arguments:
+                handles (list of file handles):
+                    Handles on all the files to load.
+            """
+        def is_afram_hrs(entry):
+            """ We are interested only in those IBD entries that relate two
+                African American individuals from the HRS dataset. Those
+                individuals are listed in INDIVS, so we check for membership in
+                that set.
+                """
+            return all(map(lambda x: x in INDIVS, entry.name))
 
-        # a sanity check
-        for m in longest_matches:
-            assert(m.individuals)
-            for individual in m.individuals:
-                assert(individual.ancestries)
-                for (hcode, chromosomes) in individual.ancestries.items():
-                    assert(chromosomes)
-                    for chromosome in chromosomes:
-                        assert(chromosome.segments)
-                        for seg in chromosome.segments:
-                            assert(len(seg.interval_bp) > 0)
+        return ifilter(is_afram_hrs, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
+            handles)))
 
-        im = plot_matches(longest_matches)
-        im.save("%s-%d.png" % (plot_name, chromosome_number), "PNG")
+    # Open the relevant files
+    handles = map(jt.compose(jt.maybe_gzip_open, make_ibd_path), xrange(1, 2))
+
+    # compute the ancestry matches for those individuals
+    matches = filter(lambda x: len(x) > 0, imap(
+        match_from_ibd_segment, get_chromosome_data(handles)))
+
+    # close the files now that they've been read and parsed
+    map(lambda h: h.close, handles)
+
+    print("Found", len(matches), "matches")
+
+    # take the N longest matches
+    # this is unnecessarily slow since it sorts the list in full prior to
+    # selecting the N longest. Better would be to use a partial selection sort.
+    # TODO: implement a partial selection sort for this.
+    longest_matches = sorted(
+            matches, key=lambda m: len(m.ibd_segment.interval))[-50:][::-1]
+
+
+    # sanity check
+    for m in longest_matches:
+        # each match relates exactly two individuals
+        assert(len(m.individuals) == 2)
+        for individual in m.individuals:
+            # each individual has at least one ancestry
+            assert(individual.ancestries)
+            for (hcode, chromosomes) in individual.ancestries.items():
+                # each haplotype has some chromosomes
+                assert(chromosomes)
+                for chromosome in chromosomes:
+                    # each chromosome has some segments
+                    assert(chromosome.segments)
+                    for seg in chromosome.segments:
+                        # each segment has a nonzero length
+                        assert(len(seg.interval_bp) > 0)
+
+    # plot the matches
+    im = plot_matches(longest_matches)
+    im.save("%s.png" % plot_name, "PNG")
 
 if __name__ == "__main__":
     if len(args) != 3:
