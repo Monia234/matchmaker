@@ -250,13 +250,13 @@ def main(project_dir, plot_name):
     PROJECT_DIR = project_dir
 
     IBD_DIR = path.join(PROJECT_DIR,
-            "baharian_projects/HRS/data/dbGaP/AfrAm/phased/3_GERMLINE")
+            "baharian_projects/HRS/data/dbGaP/fromRFMix/AfrAm/3_GERMLINE")
 
     BED_DIR = path.join(PROJECT_DIR,
             "barakatt_projects/HRS/results/HRS_AFRAM_20140609/outbed")
 
     make_ibd_path = lambda i: path.join(IBD_DIR,
-            "".join(["AfrAm.chr", str(i), ".IBD.match.gz"]))
+            "".join(["chr", str(i), ".IBD.match.gz"]))
 
     # a utility function
     flipcurry2 = j.compose(j.curry2, j.flip)
