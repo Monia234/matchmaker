@@ -105,9 +105,9 @@ class AncestrySegment(object):
     # How far apart must common-ancestry segments be to be considered distinct
     # this is used in Individual.shared_ancestry_with
     DISTANCE_CUTOFF = 100000
-    # What must be the total length of a bunch of common-ancestry segments to
-    # warrant merging them together.
-    SMOOTH_CUTOFF = 5000000
+    # What fraction of the ancestry must be shared to warrant merging the
+    # segments into one
+    SMOOTH_CUTOFF = 0.8
 
     def __init__(self, code, chromosome, interval_bp, interval_cm):
         """ Constructor.
@@ -167,6 +167,14 @@ class AncestrySegment(object):
                 (self.chromosome == other.chromosome and
                  self.interval_bp < other.interval_bp and
                  self.interval_cm < other.interval_cm))
+
+    def __len__(self):
+        """ Return the length of this segment, in basepairs. To get the length
+            in centimorgan, it is necessary to use
+                len(seg.interval_cm)
+            where seg is the ancestry segment to measure.
+            """
+        return len(self.interval_bp)
 
     def __eq__(self, other):
         return (self.interval_cm == other.interval_cm and
@@ -290,12 +298,21 @@ class Chromosome(object):
         self.segments = segments
         self.number   = number
         self.switches = None # the memoized result of as_switch_points
+        self.len      = None # memoized
 
     def segment_index_of(self, position):
         for (i, segment) in enumerate(self.segments):
             if position in segment:
                 return i
         return -1
+
+    def __len__(self):
+        """ Return the length of this chromosome, in basepairs, by adding up
+            the lengths of all the segments. The result of this is cached.
+            """
+        if self.len is None:
+            self.len = sum(map(len, self.segments))
+        return self.len
 
     def __getitem__(self, index):
         """ Get the AncestrySegment object associated with the given position.
@@ -630,15 +647,13 @@ class Individual(object):
         region_start = -1 # some dummy initial values for these
         region_end   = -1
 
+        print("SHARED ANCESTRY:", self.name, "-", other.name)
+
         # until one of the two chromosomes ends
         while position < last_position:
             # determine what the ancestries are for this iteration
-            print("At", position)
             my_anc    = haplos[0].segments[segment_counter[0]]
             other_anc = haplos[1].segments[segment_counter[1]]
-
-            print("\tMy ancestry:", my_anc.code.name)
-            print("\tOther ancestry:", other_anc.code.name)
 
             if shared: # if we are in a shared region
                 if my_anc.code == other_anc.code: #if the codes match
@@ -699,9 +714,11 @@ class Individual(object):
                     shared = False
                     region_end = last_position
                     regions.append(je.Interval(region_start, region_end))
+                    print("\tLeaving shared region:", region_start, "->",
+                            region_end)
                 break
 
-            # then, we associate each of these indices with the relevant
+            # then, we associate each of these indices with the relevant index
             # via ``enumerate''. We then sort according to the lowest start
             # position.
             bests = sorted(list(enumerate(next_indices)),
@@ -729,11 +746,17 @@ class Individual(object):
             # the following fold.
             return sum(map(len, segments))
 
-        if total_length(regions) > AncestrySegment.SMOOTH_CUTOFF:
+        shared_fraction = total_length(regions) / float(len(haplos[0]))
+
+        if shared_fraction >= AncestrySegment.SMOOTH_CUTOFF:
             # join all the regions together into the final region
             final_region = je.Interval(regions[0].start, regions[-1].end)
         else:
             final_region = je.Interval.zero()
+
+        print("\tSHARED SEGMENT: ", final_region.start, " -> ", final_region.end,
+                "(", je.intround(shared_fraction * 100), " shared ancestry)",
+                sep='')
 
         # TODO think about making it such that it's the caller of this
         # method who must smooth the intervals, that way, maybe, it can do
