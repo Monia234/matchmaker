@@ -228,7 +228,7 @@ def main(project_dir, plot_name):
 
     # the datasets to use
     IBD_DIR = path.join(PROJECT_DIR,
-            "baharian_projects/MergedData/phased/3_GERMLINE")
+            "baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected")
 
     BED_DIR = path.join(PROJECT_DIR,
             "barakatt_projects/HRS/results/HRS_AFRAM_20140609/outbed")
@@ -240,7 +240,7 @@ def main(project_dir, plot_name):
 
     # function to construct the path to the IBD date for a given chromosome
     make_ibd_path = lambda i: path.join(IBD_DIR,
-            "".join(["MERGED_chr", str(i), ".IBD.match.gz"]))
+            "".join(["MERGED_chr", str(i), ".cM.IBD.match.gz"]))
 
     # a utility function
     flipcurry2 = j.compose(j.curry2, j.flip)
