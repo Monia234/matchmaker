@@ -738,8 +738,13 @@ class Individual(object):
 
         shared_fraction = total_length(regions) / float(len(haplos[0]))
 
-        if shared_fraction >= AncestrySegment.SMOOTH_CUTOFF:
-            # join all the regions together into the final region
+        #if shared_fraction >= AncestrySegment.SMOOTH_CUTOFF:
+        #    # join all the regions together into the final region
+        #    final_region = je.Interval(regions[0].start, regions[-1].end)
+        #else:
+        #    final_region = je.Interval.zero()
+
+        if regions:
             final_region = je.Interval(regions[0].start, regions[-1].end)
         else:
             final_region = je.Interval.zero()
