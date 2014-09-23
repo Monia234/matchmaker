@@ -49,18 +49,6 @@ def plot_matches(matches):
     def scale_x(x):
         return x * WIDTH_SCALE
 
-    # the length of the longest match scaled to image coordinates
-    max_size = scale_x(len(matches[0]))
-
-    # the x values before and after which nothing must be drawn
-    min_x = conf.FIGURE_WIDTH / 2 - max_size / 2 - 1
-    max_x = conf.FIGURE_WIDTH / 2 + max_size / 2 + 1
-
-    # the interval (in image coordinates) outside which nothing must be drawn
-    drawable_interval = jt.Interval(min_x, max_x)
-
-    print("DRAWABLE INTERVAL: ", drawable_interval)
-
     # take the height of the figure, subtract by the number of margins (one
     # less than the number of matches) multiplied by the margin size, and
     # divide by the number of entries to plot.
@@ -123,37 +111,27 @@ def plot_matches(matches):
             inside_ibd = False
             for (j, seg) in enumerate(segments):
                 # construct the drawing function for this segment
-                # the drawing function also verifies that the region to draw is
-                # within the drawable bounds. If part or all of it isn't, then
-                # it will draw only the portion that is contained.
                 def draw_rect(upper_bound, lower_bound, inside_ibd, last_x):
                     segment_width_true = upper_bound - lower_bound
                     segment_width = scale_x(segment_width_true)
+                    rect = Image.new("RGBA",
+                            (jt.intround(segment_width),
+                                jt.intround(INDIVIDUAL_HEIGHT)))
+                    rect_draw = ImageDraw.Draw(rect)
+                    # Draw the rectangle, getting the color form the anc code
+                    rect_draw.rectangle([0, 0, segment_width,
+                        INDIVIDUAL_HEIGHT],
+                        fill=get_code_color(seg.code, inside_ibd))
 
                     if last_x is not None:
                         xstart = last_x
                     else:
                         xstart = jt.intround(scale_x(lower_bound) + ibd_center_offset)
                     xend   = jt.intround(xstart + segment_width)
-                    drawn_interval = jt.Interval(xstart, xend)
-                    intersection = drawn_interval.intersection(
-                            drawable_interval)
-                    print("\t\tDRAWING INTERSECTION:", intersection)
-
-                    # Perform the draw, if there is something to draw
-                    if intersection:
-                        rect = Image.new("RGBA",
-                                (jt.intround(len(intersection)),
-                                    jt.intround(INDIVIDUAL_HEIGHT)))
-                        rect_draw = ImageDraw.Draw(rect)
-                        rect_draw.rectangle([0, 0, len(intersection),
-                            INDIVIDUAL_HEIGHT],
-                            fill=get_code_color(seg.code, inside_ibd))
-                        im.paste(rect,
-                                (jt.intround(intersection.start), my_y0),
-                                mask=rect)
-                    return (intersection.start, my_y0,
-                            xend, my_y0 + INDIVIDUAL_HEIGHT)
+                    im.paste(rect,
+                            (xstart, my_y0),
+                            mask=rect)
+                    return xstart, my_y0, xend, my_y0 + INDIVIDUAL_HEIGHT
 
                 splitting = True # whether the segment will be split
 
