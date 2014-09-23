@@ -14,14 +14,27 @@ class IBDEntry:
         """
 
     @staticmethod
-    def from_GERMLINE(path):
+    def from_GERMLINE(path_or_handle):
         """ Parse a GERMLINE output file (possibly gzipped) into a list of
             IDBEntry objects.
+
+            Arguments:
+                path_or_handle (string or file handle):
+                    If the argument is a string, then a handle will be opened
+                    and closed by this method. Otherwise, the caller is
+                    expected to manage the resource.
             """
-        L = []
-        with je.maybe_gzip_open(path) as fileH:
-            for line in fileH:
-                L.append(IBDEntry.from_string(line))
+        needs_close = False
+        if isinstance(path_or_handle, str):
+            handle = je.maybe_gzip_open(path_or_handle)
+            needs_close = True
+        else:
+            handle = path_or_handle
+
+        L = map(IBDEntry.from_string, handle)
+
+        if needs_close:
+            handle.close()
         return L
 
     @staticmethod
