@@ -157,16 +157,16 @@ class AncestrySegment(object):
 
     def __lt__(self, other):
         """ Compare this segment to another. If this segment is on a lower
-            chromosome, it is automatically considered less than the other.
-            If it is ona higher chromosome, it is automatically considered not
+            chromosome, it is automatically considered less than the other. If
+            it is on a higher chromosome, it is automatically considered not
             less than the other one. If the chromosome numbers are the same,
-            then the intervals are compared according to the rules of interval
-            comparison described in the Interval class.
+            then the basepair intervals are compared according to the rules of
+            interval comparison described in the Interval class. The
+            centimorgan intervals are ignored in this comparison.
             """
         return (self.chromosome < other.chromosome or
                 (self.chromosome == other.chromosome and
-                 self.interval_bp < other.interval_bp and
-                 self.interval_cm < other.interval_cm))
+                 self.interval_bp < other.interval_bp))
 
     def __len__(self):
         """ Return the length of this segment, in basepairs. To get the length
@@ -177,8 +177,18 @@ class AncestrySegment(object):
         return len(self.interval_bp)
 
     def __eq__(self, other):
-        return (self.interval_cm == other.interval_cm and
-                self.interval_bp == other.interval_bp and # for consistency
+        """ All the components of the segments must be equal the the segments
+            to be considered equal. In other words, the following must be equal
+            among both segments:
+                1) The chromosome number
+                2) The AncestryCode
+                3) The basepair interval
+                4) The centimorgan interval
+            Equality is stricter than the less than comparison, which ignore
+            the centimorgan interval.
+            """
+        return (self.interval_bp == other.interval_bp and
+                self.interval_cm == other.interval_cm and # for consistency
                 self.code        == other.code        and
                 self.chromosome  == other.chromosome)
 
