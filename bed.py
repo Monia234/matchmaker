@@ -179,8 +179,8 @@ class AncestrySegment(object):
     def __eq__(self, other):
         return (self.interval_cm == other.interval_cm and
                 self.interval_bp == other.interval_bp and # for consistency
-                self.code == other.code and
-                self.chromosome == other.chromosome)
+                self.code        == other.code        and
+                self.chromosome  == other.chromosome)
 
     def __repr__(self):
         return "AncestrySegment(%s, %s, %s, %s)" % tuple(
