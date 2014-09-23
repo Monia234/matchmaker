@@ -110,7 +110,7 @@ class AncestrySegment(object):
     SMOOTH_CUTOFF = 0.8
 
     def __init__(self, code, chromosome, interval_bp, interval_cm):
-        """ Constructor.
+        """ Construct an AncestrySegment object.
 
             Arguments:
                 code (AncestryCode):
