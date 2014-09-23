@@ -652,7 +652,7 @@ class Individual(object):
             raise ValueError("could not match start position in one or "
                     "more of the haplotypes")
 
-        regions = [] # we'll collect Interval instances here
+        regions = [] # we'll collect AncestrySegment instances here
 
         region_start = -1 # some dummy initial values for these
         region_end   = -1
@@ -669,7 +669,10 @@ class Individual(object):
                 else: #the codes don't match
                     shared = False # we exit the shared region
                     region_end = position # we mark the end position
-                    regions.append(je.Interval(region_start, region_end))
+                    regions.append(
+                            AncestrySegment(my_anc.code, chromosome,
+                                je.Interval(region_start, region_end),
+                                je.Interval.zero()))
             else: # we are not in a shared region
                 if my_anc.code == other_anc.code: # if the codes match
                     shared = True # we enter the shared region
@@ -688,7 +691,7 @@ class Individual(object):
                         if (region_start - region_end <
                                 AncestrySegment.DISTANCE_CUTOFF):
                             # we set the start to that of the last region
-                            region_start = regions[-1].start
+                            region_start = regions[-1].interval_bp.start
                             del regions[-1] # remove the last region
                         else: #i.e. the regions are distinct
                             pass #no big deal.
@@ -715,7 +718,10 @@ class Individual(object):
                 if shared:
                     shared = False
                     region_end = last_position
-                    regions.append(je.Interval(region_start, region_end))
+                    regions.append(
+                            AncestrySegment(my_anc.code, chromosome,
+                                je.Interval(region_start, region_end),
+                                je.Interval.zero()))
                 break
 
             # then, we associate each of these indices with the relevant index
@@ -739,28 +745,5 @@ class Individual(object):
                         interval_bp.start)
         # end of the while loop
 
-        # now, ``regions'' has been populated. We need to smooth this list
-        # so that there remains only one segment.
-        def total_length(segments):
-            # Interval defines __len__ to give its size, so we can write
-            # the following fold.
-            return sum(map(len, segments))
-
-        shared_fraction = total_length(regions) / float(len(haplos[0]))
-
-        #if shared_fraction >= AncestrySegment.SMOOTH_CUTOFF:
-        #    # join all the regions together into the final region
-        #    final_region = je.Interval(regions[0].start, regions[-1].end)
-        #else:
-        #    final_region = je.Interval.zero()
-
-        if regions:
-            final_region = je.Interval(regions[0].start, regions[-1].end)
-        else:
-            final_region = je.Interval.zero()
-
-        # TODO think about making it such that it's the caller of this
-        # method who must smooth the intervals, that way, maybe, it can do
-        # something more sophisticated, or do something that involves all
-        # the segments separately.
-        return final_region
+        # Return the list of regions computed.
+        return regions

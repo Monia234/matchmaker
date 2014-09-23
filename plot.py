@@ -36,12 +36,14 @@ def plot_matches(matches):
 
     ibd_center = lambda m: (m.ibd_segment.interval.start +
             m.ibd_segment.interval.end) / 2
-    shared_center = lambda m: (m.shared_segment.start +
-            m.shared_segment.end) / 2
+    shared_center = lambda m: (m.shared_segments[0].interval_bp.start +
+            m.shared_segments[-1].interval_bp.end) / 2
     delta = lambda m: shared_center(m) - ibd_center(m)
 
-    min_bp = min(imap(lambda m: m.shared_segment.start + delta(m), matches))
-    max_bp = max(imap(lambda m: m.shared_segment.end + delta(m), matches))
+    min_bp = min(imap(
+        lambda m: m.shared_segments[0].interval_bp.start + delta(m), matches))
+    max_bp = max(imap(
+        lambda m: m.shared_segments[0].interval_bp.end + delta(m), matches))
     total_width = max_bp - min_bp
     print("WIDTH: ", total_width)
 
@@ -222,8 +224,9 @@ def plot_matches(matches):
                         last_x = rect3[2]
 
                         print("\t\tSEGMENT #", j, ".c: (", lower_bound, ", ",
-                                upper_bound, ") -> DRAW [",", ".join(map(str, rect3)),
-                                "] ", seg.code.name, sep='')
+                                upper_bound, ") "
+                                "-> DRAW [", ", ".join(map(str, rect3)), "] ",
+                                seg.code.name, sep='')
     return im
 
 def n_most(seq, n, comp=op.lt):
