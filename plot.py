@@ -223,24 +223,10 @@ def n_most(seq, n, comp=op.lt):
                 break
     return outseq if n >= len(seq) else outseq[:n]
 
-def main(project_dir, plot_name):
-    PROJECT_DIR = project_dir
-
-    # the datasets to use
-    IBD_DIR = path.join(PROJECT_DIR,
-            "baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected")
-
-    BED_DIR = path.join(PROJECT_DIR,
-            "barakatt_projects/HRS/results/HRS_AFRAM_20140609/outbed")
+def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
 
     # the set of individuals in the HRS AfrAm
-    INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), path.join(
-            PROJECT_DIR,
-            "baharian_projects/HRS/data/AfricanAmericans/AfrAm.SubjID.list")))
-
-    # function to construct the path to the IBD date for a given chromosome
-    make_ibd_path = lambda i: path.join(IBD_DIR,
-            "".join(["MERGED_chr", str(i), ".cM.IBD.match.gz"]))
+    INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), indiv_list_path))
 
     # a utility function
     flipcurry2 = j.compose(j.curry2, j.flip)
@@ -249,7 +235,7 @@ def main(project_dir, plot_name):
     # object from it.
     match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
     my_from_ibd_segment = j.supply(match_from_ibd_segment__, {"generate":True})
-    match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(BED_DIR)
+    match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
 
     def get_chromosome_data(handles):
         """ Construct a generator to yield all the IBD entries for the
@@ -273,7 +259,7 @@ def main(project_dir, plot_name):
             handles)))
 
     # Open the relevant files
-    handles = map(jt.compose(jt.maybe_gzip_open, make_ibd_path), xrange(1, 2))
+    handles = map(jt.maybe_gzip_open, ibd_paths)
 
     # compute the ancestry matches for those individuals
     matches = filter(lambda x: len(x) > 0, imap(
@@ -311,9 +297,44 @@ def main(project_dir, plot_name):
 
     # plot the matches
     im = plot_matches(longest_matches)
-    im.save("%s.png" % plot_name, "PNG")
+    im.save(plot_name, "PNG")
+
+USAGE = "This is a usage message." # TODO: write real usage message
+
+def die_with_usage():
+    print(USAGE, file=sys.stderr)
+    sys.exit(1)
 
 if __name__ == "__main__":
-    if len(args) != 3:
-        raise ValueError("incorrect number of arguments")
-    main(args[1], args[2])
+    i = 1
+    ibd_paths = []
+    outbed_path = None
+    indiv_list_path = None
+    output_file_path = None
+    while i < len(args):
+        arg = args[i]
+        nextarg = lambda: args[i+1]
+        if arg == "--ibd":
+            ibd_paths.append(nextarg())
+            i += 1
+        elif arg == "--bed":
+            outbed_path = nextarg()
+            i += 1
+        elif arg == "--ids":
+            indiv_list_path = nextarg()
+            i += 1
+        elif arg == "-o":
+            output_file_path = nextarg()
+            i += 1
+        else:
+            print("Unrecognized command line option ``%s''." % arg,
+                    file=sys.stderr)
+            die_with_usage()
+        i += 1
+
+    if not (ibd_paths and outbed_path and indiv_list_path and
+            output_file_path):
+        print("One or more necessary arguments have no value.", file=sys.stderr)
+        die_with_usage()
+
+    main(ibd_paths, outbed_path, indiv_list_path, output_file_path)
