@@ -594,6 +594,16 @@ class Individual(object):
         return "Individual(%s, %s)" % tuple(
                 map(repr, (self.name, self.ancestries)))
 
+    def to_debugstr(self, haplo_code):
+        s = ""
+        for chromosomes in self.ancestries[haplo_code]:
+            for chromosome in chromosomes:
+                for segment in chromosome.segments:
+                    s += "%d\t%d\t%d\t%s" % (chromosome.number,
+                            segment.interval_bp.start, segment.interval_bp.end,
+                            segment.code)
+        return s
+
     def shared_ancestry_with(self, other, haplo_self, haplo_other, chromosome):
         """ For each haplotype, determine an interval along which this
             Individual has the same ancestry as another Individual.
