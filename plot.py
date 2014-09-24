@@ -226,7 +226,7 @@ def n_most(seq, n, comp=op.lt):
 def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
 
     # the set of individuals in the HRS AfrAm
-    INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), indiv_list_path))
+    #INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), indiv_list_path))
 
     # a utility function
     flipcurry2 = j.compose(j.curry2, j.flip)
@@ -237,7 +237,23 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
     my_from_ibd_segment = j.supply(match_from_ibd_segment__, {"generate":True})
     match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
 
-    def get_chromosome_data(handles):
+    # Define some filter functions for the merged data.
+    def is_afram_hrs(entry):
+        """ We are interested only in those IBD entries that relate two
+            African American individuals from the HRS dataset. Those
+            individuals are listed in INDIVS, so we check for membership in
+            that set.
+            """
+        return all(map(lambda x: x in INDIVS, entry.name))
+
+    def is_sccs(entry):
+        """ We are interested only in those IBD entries that relate
+            individuals from the SCCS dataset. These individuals have
+            subject IDs starting with "GWAS_".
+            """
+        return all(map(lambda x: x.startswith("GWAS_"), entry.name))
+
+    def get_chromosome_data(handles, filterf):
         """ Construct a generator to yield all the IBD entries for the
             African-American HRS dataset. We are pulling Soheil's MergedData
             dataset, so the GERMLINE output files need to be filtered to remove
@@ -247,15 +263,7 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
                 handles (list of file handles):
                     Handles on all the files to load.
             """
-        def is_afram_hrs(entry):
-            """ We are interested only in those IBD entries that relate two
-                African American individuals from the HRS dataset. Those
-                individuals are listed in INDIVS, so we check for membership in
-                that set.
-                """
-            return all(map(lambda x: x in INDIVS, entry.name))
-
-        return ifilter(is_afram_hrs, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
+        return ifilter(filterf, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
             handles)))
 
     # Open the relevant files
@@ -263,10 +271,10 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
 
     # compute the ancestry matches for those individuals
     matches = filter(lambda x: len(x) > 0, imap(
-        match_from_ibd_segment, get_chromosome_data(handles)))
+        match_from_ibd_segment, get_chromosome_data(handles, is_sccs)))
 
     # close the files now that they've been read and parsed
-    map(lambda h: h.close, handles)
+    map(jt.project("close"), handles)
 
     print("Found", len(matches), "matches")
 
