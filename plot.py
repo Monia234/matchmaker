@@ -228,15 +228,6 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
     # the set of individuals in the HRS AfrAm
     #INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), indiv_list_path))
 
-    # a utility function
-    flipcurry2 = j.compose(j.curry2, j.flip)
-
-    # construct a function that takes an IBDEntry and generates the match
-    # object from it.
-    match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
-    my_from_ibd_segment = j.supply(match_from_ibd_segment__, {"generate":True})
-    match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
-
     # Define some filter functions for the merged data.
     def is_afram_hrs(entry):
         """ We are interested only in those IBD entries that relate two
@@ -266,15 +257,29 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
         return ifilter(filterf, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
             handles)))
 
+    def sccs_name_parser(filename):
+        return (filename[1:10], filename[11])
+
+    # a utility function
+    flipcurry2 = j.compose(j.curry2, j.flip)
+
+    # construct a function that takes an IBDEntry and generates the match
+    # object from it.
+    match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
+    my_from_ibd_segment = j.supply(match_from_ibd_segment__,
+            {"generate":True, "filename_parserf":sccs_name_parser})
+    match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
+
     # Open the relevant files
     handles = map(jt.maybe_gzip_open, ibd_paths)
 
     # compute the ancestry matches for those individuals
     matches = filter(lambda x: len(x) > 0, imap(
-        match_from_ibd_segment, get_chromosome_data(handles, is_sccs)))
+        match_from_ibd_segment,
+        get_chromosome_data(handles, is_sccs)))
 
     # close the files now that they've been read and parsed
-    map(jt.project("close"), handles)
+    map(lambda x: x.close(), handles)
 
     print("Found", len(matches), "matches")
 

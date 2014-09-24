@@ -20,7 +20,7 @@ class IBDAncestryMatch:
 
     @staticmethod
     def from_ibd_segment(ibd_segment, bed_dir, cache=True, generate=False,
-            robust=False):
+            robust=False, filename_parserf=None):
         """ Construct an IBDAncestryMatch from only an IBD segment and a
             repository of bed files, optionally generating the shared ancestry
             segment, and optionally checking for robustness.
@@ -69,7 +69,10 @@ class IBDAncestryMatch:
                 whole file. So rather than reload the same individual 22 times
                 in total, caching allows us to save on space, overall.
             """
-        load_from_disk = je.curry2(bed.Individual.from_dir_and_name)(bed_dir)
+        load_from_disk = je.curry2(
+                je.supply(
+                    bed.Individual.from_dir_and_name,
+                    {"parserf":filename_parserf}))(bed_dir)
 
         def load_individual(name):
             """ Function that will first try to load an individual from the

@@ -444,7 +444,7 @@ class Individual(object):
 
         if result is None:
             raise ValueError("the given filename could not be matched against"
-                    " the regular expression for parsing bed file names,"
+                    " the regular expression for parsing HRS bed file names,"
                     " namely ``%s''." % regex)
 
         name, haplotype = result.groups()
@@ -452,10 +452,13 @@ class Individual(object):
         return (name, haplotype)
 
     @staticmethod
-    def from_files(path_to_bed_a, path_to_bed_b):
+    def from_files(path_to_bed_a, path_to_bed_b, parserf=None):
         """ Parse the two files, one for each haplotype, as well as their
             filenames for identity information. The names parsed from the
             filenames must match, and the haplotype codes must be different.
+            The parsing can be done with a given parsing function. If none is
+            provided, then it is done by a regex that will extract the subject
+            ID for HRS .bed files.
             """
         # check that the given paths aren't the same
         if path_to_bed_a == path_to_bed_b:
@@ -470,10 +473,10 @@ class Individual(object):
         # create a helper function since we'll be mapping over the paths a lot
         for_each_path = je.for_each_c(paths)
 
-        # Individual.id_data_from_filename takes just the filename, but we have
+        # Individual._id_data_from_filename takes just the filename, but we have
         # full paths, so we construct a function that will parse a full path.
         id_data_from_path = je.compose(
-                I._id_data_from_filename, os.path.basename)
+                parserf or I._id_data_from_filename, os.path.basename)
 
 
         # Parse the paths to extract the name and haplotype information
@@ -517,10 +520,10 @@ class Individual(object):
         return Individual(name_a, ancestry_dict)
 
     @staticmethod
-    def from_dir_and_name(bed_dir, name):
+    def from_dir_and_name(bed_dir, name, parserf=None):
         return Individual.from_files(
                 *map(lambda dname: os.path.join(bed_dir, dname),
-                    Individual._decorate_name(name)))
+                    Individual._decorate_name(name)), parserf=parserf)
 
     @staticmethod
     def check_ancestry_pre(ancestry_pre):
