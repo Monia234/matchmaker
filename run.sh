@@ -2,19 +2,20 @@
 
 AFRAMIDLIST="project/baharian_projects/HRS/data/AfricanAmericans/AfrAm.SubjID.list"
 
-function SCCS() {
+function SCCS {
     IBDDIR="project/baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected" 
     BEDDIR="project/barakatt_projects/HRS/results/SCCS_notphased_20140923/outbed"
-    NAME="SCCS-$(date +%F-%T)"
 
-        
-    if python plot.py --ibd $IBDDIR/MERGED_chr1.cM.IBD.match.gz --bed $BEDDIR --ids dummy \
-        -o "plots/${NAME}.png" > "logs/${NAME}.log"
-    then
-        notify-send "SCCS IBD and local ancestry plots" "Finished generating 'plots/$NAME'."
-    else
-        notify-send "SCCS IBD and local ancestry plots" "Error generating 'plots/$NAME'."
-    fi
+    for chr in $(seq $1 $2) ; do
+        NAME="SCCS-$(date +%F-%T-chr$chr)"
+        if python plot.py --ibd $IBDDIR/MERGED_chr${chr}.cM.IBD.match.gz --bed $BEDDIR --ids dummy \
+            -o "plots/${NAME}.png" > "logs/${NAME}.log"
+        then
+            notify-send "SCCS IBD and local ancestry plots" "Finished generating 'plots/$NAME'."
+        else
+            notify-send "SCCS IBD and local ancestry plots" "Error generating 'plots/$NAME'."
+        fi
+    done
 }
 
 function HRS() {
@@ -34,4 +35,12 @@ function HRS() {
 
 # HRS
 
-SCCS
+if ! test -n "$1" ; then
+    startchr=18
+    endchr=18
+else
+    startchr=$1
+    endchr=$2
+fi
+
+SCCS $startchr $endchr
