@@ -221,7 +221,7 @@ def plot_matches(matches):
             shared_rect = Image.new("RGBA",
                     (jt.intround(segment_width),
                         jt.intround(rect_height)),
-                    color=(128, 128, 128, 128))
+                    color=conf.SHARED_ANC_DEBUG_COLOR)
 
             sa_y0 = jt.intround(
                     i * (ENTRY_HEIGHT + conf.INTER_ENTRY_MARGIN))
