@@ -1,6 +1,5 @@
 #!/bin/bash
 
-
 AFRAMIDLIST="project/baharian_projects/HRS/data/AfricanAmericans/AfrAm.SubjID.list"
 
 function SCCS() {

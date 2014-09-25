@@ -161,7 +161,7 @@ class IBDAncestryMatch:
             Returns (boolean):
                 Whether the determined segment is nonempty.
             """
-        self.shared_segment = self.individuals[0].shared_ancestry_with(
+        self.shared_segments = self.individuals[0].shared_ancestry_with(
                 self.individuals[1],
                 bed.Individual.bed_code_from_IBD(
                     self.ibd_segment.haplotype[0]),
@@ -173,7 +173,7 @@ class IBDAncestryMatch:
 
     def is_empty(self):
         """ Wrapper for the inner Interval's is_empty method. """
-        return self.shared_segment.is_empty()
+        return len(self.shared_segments) == 0
 
     def __lt__(self, other):
         """ Compare this IBDAncestryMatch with another on the basis of their
@@ -194,14 +194,19 @@ class IBDAncestryMatch:
         return self.ibd_segment > other.ibd_segment
 
     def __len__(self):
-        """ Simply wraps the length of the shared segment.
-            An exception is raised if the shared segment has not been computed
+        """ Gets the total length of the shared segments, ignoring gaps between
+            them, if any.
+            An exception is raised if the shared segments have not been computed
             yet.
+            Zero is returned if there are no shared segments.
             """
-        if self.shared_segment is None:
+        if self.shared_segments is None:
             raise ValueError("Cannot get length of unevaluated match.")
+        elif not self.shared_segments:
+            return 0
         else:
-            return len(self.shared_segment)
+            return (self.shared_segments[-1].interval_bp.end -
+                    self.shared_segments[0].interval_bp.start)
 
     def __repr__(self):
         return "IBDAncestryMatch(%s, %s, %s)" % (
