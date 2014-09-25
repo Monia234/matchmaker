@@ -148,7 +148,9 @@ class IBDAncestryMatch:
 
     def compute(self, robust=False):
         """ Perform shared ancestry determination, with optional robustness
-            checking.
+            checking. The resulting list of AncestrySegment objects which are
+            shared are stored in the shared_segments attribute of this
+            instance.
 
             Argument:
                 robust (boolean) (default: False):
@@ -161,13 +163,29 @@ class IBDAncestryMatch:
             Returns (boolean):
                 Whether the determined segment is nonempty.
             """
-        self.shared_segments = self.individuals[0].shared_ancestry_with(
+        shared_segments = self.individuals[0].shared_ancestry_with(
                 self.individuals[1],
                 bed.Individual.bed_code_from_IBD(
                     self.ibd_segment.haplotype[0]),
                 bed.Individual.bed_code_from_IBD(
                     self.ibd_segment.haplotype[1]),
                 self.ibd_segment.chromosome)
+
+        if robust:
+            shared_segments_reverse = self.individuals[1].shared_ancestry_with(
+                    self.individuals[0],
+                    bed.Individual.bed_code_from_IBD(
+                        self.ibd_segment.haplotype[1]),
+                    bed.Individual.bed_code_from_IBD(
+                        self.ibd_segment.haplotype[0]),
+                    self.ibd_segment.chromosome)
+
+            if shared_segments != shared_segments_reverse:
+                raise ValueError("Robustness check failed for individuals",
+                        self.individuals[0].name, "and",
+                        self.individuals[1].name)
+
+        self.shared_segments = shared_segments
 
         return not self.is_empty()
 
