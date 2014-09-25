@@ -256,44 +256,8 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name, debug_mode):
 
     # Define some filter functions for the merged data.
 
-    def get_chromosome_data(handles, filterf):
-        """ Construct a generator to yield all the IBD entries for the
-            African-American HRS dataset. We are pulling Soheil's MergedData
-            dataset, so the GERMLINE output files need to be filtered to remove
-            entries from the other datasets.
-
-            Arguments:
-                handles (list of file handles):
-                    Handles on all the files to load.
-            """
-        return ifilter(filterf, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
-            handles)))
-
-    id_to_bedfile = lambda i, h: "".join(["T", i, "_", h, "_cM.bed"])
-
-    # a utility function
-    flipcurry2 = j.compose(j.curry2, j.flip)
-
-    # construct a function that takes an IBDEntry and generates the match
-    # object from it.
-    match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
-    my_from_ibd_segment = j.supply(match_from_ibd_segment__,
-            {"generate":True, "cache":True, "robust":debug_mode
-                "filename_parserf":dataset_utils.sccs_name_parser})
-    match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
-
-    # Open the relevant files
-    handles = map(jt.maybe_gzip_open, ibd_paths)
-
-    # compute the ancestry matches for those individuals
-    matches = filter(lambda x: len(x) > 0, imap(
-        match_from_ibd_segment,
-        get_chromosome_data(handles, dataset_utils.is_sccs)))
-
-    # close the files now that they've been read and parsed
-    map(lambda x: x.close(), handles)
-
-    print("Found", len(matches), "matches")
+    matches = match.IBDAncestryMatch.from_ibds_and_bedpath(ibd_paths,
+            outbed_path, dataset_utils.is_sccs)
 
     # take the N longest matches
     # this is unnecessarily slow since it sorts the list in full prior to

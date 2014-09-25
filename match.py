@@ -2,7 +2,8 @@
 
 import ibd
 import bed
-import jerrington_tools as je
+import jerrington_tools as jt
+import dataset_utils
 
 from itertools import imap
 from operator import eq
@@ -17,6 +18,78 @@ class IBDAncestryMatch:
         comparison, where instances are compared on the basis of the length of
         the IBD segment.
         """
+
+    @staticmethod
+    def from_ibds_and_bedpath(ibd_paths, outbed_path, ibd_filterf,
+            robust=False, debug_mode=False):
+        def get_chromosome_data(handles, filterf):
+            """ Construct a generator to yield all the IBD entries for the
+                African-American HRS dataset. We are pulling Soheil's MergedData
+                dataset, so the GERMLINE output files need to be filtered to remove
+                entries from the other datasets.
+
+                Arguments:
+                    handles (list of file handles):
+                        Handles on all the files to load.
+                """
+            return ifilter(filterf, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
+                handles)))
+
+        id_to_bedfile = lambda i, h: "".join(["T", i, "_", h, "_cM.bed"])
+
+        # a utility function
+        flipcurry2 = jt.compose(jt.curry2, jt.flip)
+
+        # construct a function that takes an IBDEntry and generates the match
+        # object from it.
+        match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
+        my_from_ibd_segment = jt.supply(match_from_ibd_segment__,
+                {"generate":True, "cache":True, "robust":robust
+                    "filename_parserf":dataset_utils.sccs_name_parser})
+        match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
+
+        # Open the relevant files
+        handles = map(jt.maybe_gzip_open, ibd_paths)
+
+        # compute the ancestry matches for those individuals
+        matches = filter(lambda x: len(x) > 0, imap(
+            match_from_ibd_segment,
+            get_chromosome_data(handles, dataset_utils.is_sccs)))
+
+        # close the files now that they've been read and parsed
+        map(lambda x: x.close(), handles)
+
+        # sanity check
+        if debug_mode:
+            for m in longest_matches:
+                # each match relates exactly two individuals
+                assert(len(m.individuals) == 2)
+                for individual in m.individuals:
+                    clone = bed.Individual.from_dir_and_name(
+                            outbed_path, individual.name, dataset_utils.sccs_name_parser)
+                    for hcode in bed.Individual.HAPLOTYPE_CODES:
+                        debug_bed = individual.to_debugstr(hcode)
+                        clone_debug_bed = clone.to_debugstr(hcode)
+                        if debug_bed != clone_debug_bed:
+                            print("Ancestry mismatch with clone!", file=sys.stderr)
+                            print("INTERNAL:", file=sys.stderr)
+                            print(debug_bed)
+                            print("CLONE:", file=sys.stderr)
+                            print(clone_debug_bed)
+                            raise Exception()
+                    # each individual has at least one ancestry
+                    assert(individual.ancestries)
+                    for (hcode, chromosomes) in individual.ancestries.items():
+                        # each haplotype has some chromosomes
+                        assert(chromosomes)
+                        for chromosome in chromosomes:
+                            # each chromosome has some segments
+                            assert(chromosome.segments)
+                            for seg in chromosome.segments:
+                                # each segment has a nonzero length
+                                assert(len(seg.interval_bp) > 0)
+
+        return matches
 
     @staticmethod
     def from_ibd_segment(ibd_segment, bed_dir, cache=True, generate=False,
@@ -69,8 +142,8 @@ class IBDAncestryMatch:
                 whole file. So rather than reload the same individual 22 times
                 in total, caching allows us to save on space, overall.
             """
-        load_from_disk = je.curry2(
-                je.supply(
+        load_from_disk = jt.curry2(
+                jt.supply(
                     bed.Individual.from_dir_and_name,
                     {"parserf":filename_parserf}))(bed_dir)
 
@@ -141,7 +214,7 @@ class IBDAncestryMatch:
         # if it is determined that the IBD order is the opposite of the given
         # order
         if not all(imap(eq,
-                je.for_each(self.individuals, je.project_c("name")),
+                jt.for_each(self.individuals, jt.project_c("name")),
                 self.ibd_segment.name)):
             raise ValueError("the given IBD segment does not relate the given "
                     "individuals.")

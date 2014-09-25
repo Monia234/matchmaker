@@ -170,6 +170,9 @@ def supply(fun, kwargs):
     return lambda *args, **kwargs2: fun(
             *args, **dict(kwargs.items() + kwargs2.items()))
 
+def apply(fun, *args):
+    return fun(*args)
+
 compose_c = curry2(compose)
 
 project_from_c = curry2(project_from)
@@ -342,4 +345,7 @@ class Interval(object):
             same boundaries.
             """
         return self.start == other.start and self.end == other.end
+
+    def __nonzero__(self):
+        return len(self) != 0
 
