@@ -108,7 +108,7 @@ def plot_matches(matches, debug_shared_ancestry=False):
 
             # the ancestry segments on the IBD haplotype, on the IBD
             # chromosome, for this individual
-            my_chromosome = individual.ancestries[my_haplotype][my_chr]
+            my_chromosome = individual.ancestries[my_haplotype][my_chr - 1]
             segments = my_chromosome.segments
 
             # control variable: whether we are inside the IBD segment

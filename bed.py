@@ -639,8 +639,8 @@ class Individual(object):
         # To represent whether we are in a shared region.
         shared = False
 
-        haplos = (self[haplo_self][chromosome],
-                  other[haplo_other][chromosome])
+        haplos = (self[haplo_self][chromosome - 1],
+                  other[haplo_other][chromosome - 1])
 
         haplo_sizes = map(lambda hap: len(hap.segments), haplos)
 
