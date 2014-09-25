@@ -599,12 +599,14 @@ class Individual(object):
 
     def to_debugstr(self, haplo_code):
         s = ""
-        for chromosomes in self.ancestries[haplo_code]:
-            for chromosome in chromosomes:
-                for segment in chromosome.segments:
-                    s += "%d\t%d\t%d\t%s" % (chromosome.number,
-                            segment.interval_bp.start, segment.interval_bp.end,
-                            segment.code)
+        for chromosome in self.ancestries[haplo_code]:
+            st = []
+            for segment in chromosome.segments:
+                st.append("%d\t%d\t%d\t%s\t%f\t%f" % (chromosome.number,
+                        segment.interval_bp.start, segment.interval_bp.end,
+                        segment.code.name, segment.interval_cm.start,
+                        segment.interval_cm.end))
+            s += '\n'.join(st)
         return s
 
     def shared_ancestry_with(self, other, haplo_self, haplo_other, chromosome):
