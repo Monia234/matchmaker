@@ -207,23 +207,26 @@ def plot_matches(matches):
                                 upper_bound, ") "
                                 "-> DRAW [", ", ".join(map(str, rect3)), "] ",
                                 seg.code.name, sep='')
-            for shared_segment in entry.shared_segments:
-                rect_height = ENTRY_HEIGHT
+        for shared_segment in entry.shared_segments:
+            rect_height = ENTRY_HEIGHT
 
-                segment_width_true = len(shared_segment.interval_bp)
-                segment_width = scale_x(segment_width_true)
+            segment_width_true = len(shared_segment.interval_bp)
+            segment_width = scale_x(segment_width_true)
 
-                xstart = jt.intround(
-                        scale_x(shared_segment.interval_bp.start)
-                        + ibd_center_offset)
-                xend = jt.intround(xstart + segment_width)
+            xstart = jt.intround(
+                    scale_x(shared_segment.interval_bp.start)
+                    + ibd_center_offset)
+            xend = jt.intround(xstart + segment_width)
 
-                shared_rect = Image.new("RGBA",
-                        (jt.intround(segment_width),
-                            jt.intround(rect_height)),
-                        color=(128, 128, 128, 128))
+            shared_rect = Image.new("RGBA",
+                    (jt.intround(segment_width),
+                        jt.intround(rect_height)),
+                    color=(128, 128, 128, 128))
 
-                im.paste(shared_rect, (xstart, my_y0), mask=shared_rect)
+            sa_y0 = jt.intround(
+                    i * (ENTRY_HEIGHT + conf.INTER_ENTRY_MARGIN))
+
+            im.paste(shared_rect, (xstart, sa_y0), mask=shared_rect)
     return im
 
 def n_most(seq, n, comp=op.lt):
