@@ -209,6 +209,8 @@ class AncestrySegment(object):
             ValueError will be raised.
             """
         words = input_string.split()
+        if len(words) != 6:
+            raise ValueError("Incorrectly formatted bed file.")
         id = lambda x: x # identity function
         chromosome, start_bp, end_bp, ancestry, start_cm, end_cm = [
                 f(x) for (f, x)
