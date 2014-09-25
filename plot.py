@@ -268,6 +268,8 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
         return ifilter(filterf, chain(*map(ibd.IBDEntry.ifrom_GERMLINE,
             handles)))
 
+    id_to_bedfile = lambda i, h: "".join(["T", i, "_", h, "_cM.bed"])
+
     # a utility function
     flipcurry2 = j.compose(j.curry2, j.flip)
 
@@ -299,12 +301,25 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
     longest_matches = sorted(
             matches, key=lambda m: len(m.ibd_segment.interval))[-50:][::-1]
 
+    print("Begin consistency check.", file=sys.stderr)
 
     # sanity check
     for m in longest_matches:
         # each match relates exactly two individuals
         assert(len(m.individuals) == 2)
         for individual in m.individuals:
+            clone = bed.Individual.from_dir_and_name(
+                    outbed_path, individual.name, dataset_utils.sccs_name_parser)
+            for hcode in bed.Individual.HAPLOTYPE_CODES:
+                debug_bed = individual.to_debugstr(hcode)
+                clone_debug_bed = clone.to_debugstr(hcode)
+                if debug_bed != clone_debug_bed:
+                    print("Ancestry mismatch with clone!", file=sys.stderr)
+                    print("INTERNAL:", file=sys.stderr)
+                    print(debug_bed)
+                    print("CLONE:", file=sys.stderr)
+                    print(clone_debug_bed)
+                    raise Exception()
             # each individual has at least one ancestry
             assert(individual.ancestries)
             for (hcode, chromosomes) in individual.ancestries.items():
@@ -316,6 +331,8 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
                     for seg in chromosome.segments:
                         # each segment has a nonzero length
                         assert(len(seg.interval_bp) > 0)
+
+    print("Consistency checks completed successfully!")
 
     # plot the matches
     im = plot_matches(longest_matches)
