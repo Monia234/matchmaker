@@ -249,7 +249,7 @@ def n_most(seq, n, comp=op.lt):
                 break
     return outseq if n >= len(seq) else outseq[:n]
 
-def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
+def main(ibd_paths, outbed_path, indiv_list_path, plot_name, debug_mode):
 
     # the set of individuals in the HRS AfrAm
     #INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), indiv_list_path))
@@ -278,7 +278,7 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
     # object from it.
     match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
     my_from_ibd_segment = j.supply(match_from_ibd_segment__,
-            {"generate":True,
+            {"generate":True, "cache":True, "robust":debug_mode
                 "filename_parserf":dataset_utils.sccs_name_parser})
     match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
 
@@ -336,7 +336,7 @@ def main(ibd_paths, outbed_path, indiv_list_path, plot_name):
     print("Consistency checks completed successfully!")
 
     # plot the matches
-    im = plot_matches(longest_matches)
+    im = plot_matches(longest_matches, debug_mode)
     im.save(plot_name, "PNG")
 
 USAGE = "This is a usage message." # TODO: write real usage message
@@ -351,6 +351,7 @@ if __name__ == "__main__":
     outbed_path = None
     indiv_list_path = None
     output_file_path = None
+    debug_mode = False
     while i < len(args):
         arg = args[i]
         nextarg = lambda: args[i+1]
@@ -366,6 +367,8 @@ if __name__ == "__main__":
         elif arg == "-o":
             output_file_path = nextarg()
             i += 1
+        elif arg == "--debug":
+            debug_mode = True
         else:
             print("Unrecognized command line option ``%s''." % arg,
                     file=sys.stderr)
@@ -377,4 +380,4 @@ if __name__ == "__main__":
         print("One or more necessary arguments have no value.", file=sys.stderr)
         die_with_usage()
 
-    main(ibd_paths, outbed_path, indiv_list_path, output_file_path)
+    main(ibd_paths, outbed_path, indiv_list_path, output_file_path, debug_mode)
