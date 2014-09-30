@@ -25,6 +25,7 @@
 from __future__ import print_function
 
 from itertools import imap
+import operator as op
 import gzip
 import sys
 
@@ -148,6 +149,16 @@ def maybe_gzip_open(filename, mode='rb'):
     else:
         return open(filename, mode)
 
+def any_eq(elem, seq):
+    return any(imap(curry2(op.eq)(elem), seq))
+
+def const(k):
+    """ Construct a function of arbitrarily many arguments and keyword-
+        arguments that simple ignores them, always returning the same
+        value.
+        """
+    return lambda *args, **kwargs: k
+
 # The following two functions are composable generalization of non-kwarg
 # star-args.
 
@@ -171,7 +182,10 @@ def supply(fun, kwargs):
             *args, **dict(kwargs.items() + kwargs2.items()))
 
 def apply(fun, *args):
+    """ Apply a function to its arguments. """
     return fun(*args)
+
+apply_c = curry2(apply)
 
 compose_c = curry2(compose)
 
