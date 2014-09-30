@@ -12,9 +12,8 @@ def main(ibd_paths, outbed_path, ibd_filterf):
     matches = match.IBDAncestryMatch.from_ibds_and_bedpath(
             ibd_paths, outbed_path, ibd_filterf)
 
-    ancestry_sizes = []
-
-    map(lambda m: ancestry_sizes.extend(m.calculate_ibd_ancestry_sizes()),
+    ancestry_sizes = map(
+            lambda m: m.calculate_ibd_ancestry_sizes(),
             matches)
 
     # determine the sum of all the sizes of the ibd segments

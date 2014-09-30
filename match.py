@@ -265,30 +265,24 @@ class IBDAncestryMatch:
         return not self.is_empty()
 
     def calculate_ibd_ancestry_sizes(self):
-        """ Get a list of dicts associating ancestry codenames with their size
-            within the IBD region of this match. The indices in the constructed
-            list match up with the indices in the individuals list of this
-            match. Sizes are in basepairs. The constructed list is saved to the
-            attribute ibd_ancestry_sizes.
+        """ Get a dict associating ancestry codenames with their size within
+            the IBD region of this match. Sizes are in basepairs. The constructed
+            list is saved to the attribute ibd_ancestry_sizes.
             """
         ibd_interval = self.ibd_segment.interval
         haplotype_codes = map(
                 bed.Individual.bed_code_from_IBD,
                 self.ibd_segment.haplotype)
-        r = []
-        for chroms in map(lambda i, h: i[h], self.individuals,
-                haplotype_codes):
-            chrom = chroms[self.ibd_segment.chromosome]
-            sizes = {}
-            for segment in chrom.segments:
-                N = ibd_interval.intersection(segment.interval_bp)
-                if segment.code.name in sizes:
-                    sizes[segment.code.name] += len(N)
-                else:
-                    sizes[segment.code.name]  = len(N)
-            r.append(sizes)
-        self.ibd_ancestry_sizes = r
-        return r
+        chrom = self.individuals[0][haplotype_codes[0]][self.ibd_segment.chromosome]
+        sizes = {}
+        for h in bed.AncestryCode.CODENAMES:
+            sizes[h] = 0 # initialize each ancestry to zero
+
+        for segment in chrom.segments:
+            N = ibd_interval.intersection(segment.interval_bp)
+            sizes[segment.code.name] += len(N)
+        self.ibd_ancestry_sizes = sizes
+        return sizes
 
     def is_empty(self):
         """ Wrapper for the inner Interval's is_empty method. """
