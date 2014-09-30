@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import jerrington_tools as jt
 import match
 import bed
@@ -7,7 +9,8 @@ import ibd
 import dataset_utils
 
 def main(ibd_paths, outbed_path, ibd_filterf):
-    matches = match.from_ibds_and_bedpath(ibd_paths, outbed_path, ibd_filterf)
+    matches = match.IBDAncestryMatch.from_ibds_and_bedpath(
+            ibd_paths, outbed_path, ibd_filterf)
 
     ancestry_sizes = []
 
@@ -23,11 +26,11 @@ def main(ibd_paths, outbed_path, ibd_filterf):
         total_sizes[code] = 0
 
     for ancestry_size in ancestry_sizes:
-        for (code, size) in ancestry_sizes.items():
+        for (code, size) in ancestry_size.items():
             total_sizes[code] += size
 
     for (code, size) in total_sizes.items():
-        print(code, size, sep='\t')
+        print(code, size / total_ibd_length, sep='\t')
 
 if __name__ == "__main__":
     main(["project/baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected/MERGED_chr1.cM.IBD.match.gz"],

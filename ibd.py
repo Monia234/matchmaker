@@ -95,3 +95,6 @@ class IBDEntry:
             the inner interval.
             """
         return len(self.interval) < len(other.interval)
+
+    def __len__(self):
+        return len(self.interval)

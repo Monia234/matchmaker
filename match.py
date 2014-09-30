@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
+
 import ibd
 import bed
 import jerrington_tools as jt
 import dataset_utils
 
-from itertools import imap
+from itertools import imap, ifilter, chain
 from operator import eq
 
 ANCESTRY_DATA_CACHE = {}
@@ -42,9 +44,9 @@ class IBDAncestryMatch:
 
         # construct a function that takes an IBDEntry and generates the match
         # object from it.
-        match_from_ibd_segment__ = match.IBDAncestryMatch.from_ibd_segment
+        match_from_ibd_segment__ = IBDAncestryMatch.from_ibd_segment
         my_from_ibd_segment = jt.supply(match_from_ibd_segment__,
-                {"generate":True, "cache":True, "robust":robust
+                {"generate":True, "cache":True, "robust":robust,
                     "filename_parserf":dataset_utils.sccs_name_parser})
         match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
 
@@ -274,16 +276,16 @@ class IBDAncestryMatch:
                 bed.Individual.bed_code_from_IBD,
                 self.ibd_segment.haplotype)
         r = []
-        for chrom in map(jt.splat(apply), zip(self.individuals,
-                haplotype_codes)):
+        for chroms in map(lambda i, h: i[h], self.individuals,
+                haplotype_codes):
+            chrom = chroms[self.ibd_segment.chromosome]
             sizes = {}
             for segment in chrom.segments:
                 N = ibd_interval.intersection(segment.interval_bp)
-                if N: # if the intersection is nonzero
-                    if segment.code.name in sizes:
-                        sizes[segment.code.name] += len(N)
-                    else:
-                        sizes[segment.code.name]  = len(N)
+                if segment.code.name in sizes:
+                    sizes[segment.code.name] += len(N)
+                else:
+                    sizes[segment.code.name]  = len(N)
             r.append(sizes)
         self.ibd_ancestry_sizes = r
         return r
