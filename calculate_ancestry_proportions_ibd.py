@@ -39,26 +39,30 @@ def main(ibd_paths, outbed_path, ibd_filter):
     matches = match.IBDAncestryMatch.from_ibds_and_bedpath(
             handles, outbed_path, ibd_filterf)
 
-    for x in handles: x.close()
-
-    ancestry_sizes = imap(
-            lambda m: m.calculate_ibd_ancestry_sizes(),
-            matches)
-
-    # determine the sum of all the sizes of the ibd segments
-    total_ibd_length = float(sum(len(match.ibd_segment) for match in matches))
-
     # Initialize the code counts to zero
     total_sizes = {}
-    for code in bed.AncestryCode.CODENAMES:
-        total_sizes[code] = 0
+    for code in bed.AncestryCode.CODENAMES: total_sizes[code] = 0
 
-    for ancestry_size in ancestry_sizes:
-        for (code, size) in ancestry_size.items():
-            total_sizes[code] += size
+    def elemwise_append(d1, d2):
+        """ Append the values in d2 to the corresponding ones in d1.
+            d1 is returned for chaining.
+            """
+        for (k, v) in d2.items():
+            d1[k] += v
+        return d1
+
+    (total_ibd_length, total_sizes) = reduce(
+            lambda (ibd_len, tot_size), m: (
+                ibd_len + len(m.ibd_segment),
+                elemwise_append(tot_size, m.calculate_ibd_ancestry_sizes())),
+            matches, (0, total_sizes))
+
+    print(total_sizes)
 
     for (code, size) in total_sizes.items():
-        print(code, size / total_ibd_length, sep='\t')
+        print(code, size / float(total_ibd_length), sep='\t')
+
+    for x in handles: x.close()
 
 if __name__ == "__main__":
     if len(args) == 1:
