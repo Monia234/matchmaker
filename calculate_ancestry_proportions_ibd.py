@@ -34,8 +34,12 @@ def main(ibd_paths, outbed_path, ibd_filter):
     else:
         ibd_filterf = ibd_filter
 
+    handles = imap(jt.maybe_gzip_open, ibd_paths)
+
     matches = match.IBDAncestryMatch.from_ibds_and_bedpath(
-            ibd_paths, outbed_path, ibd_filterf)
+            handles, outbed_path, ibd_filterf)
+
+    for x in handles: x.close()
 
     ancestry_sizes = imap(
             lambda m: m.calculate_ibd_ancestry_sizes(),

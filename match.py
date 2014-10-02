@@ -22,8 +22,14 @@ class IBDAncestryMatch:
         """
 
     @staticmethod
-    def from_ibds_and_bedpath(ibd_paths, outbed_path, ibd_filterf,
+    def from_ibds_and_bedpath(handles, outbed_path, ibd_filterf,
             robust=False, debug_mode=False):
+        """ Construct a generator to yield a list of IBDAncestryMatch objects
+            from the given directory of ancestry data and list of handles.
+            An optional filter can be provided to restrict which entries are
+            read in from the ibd file. All operations are performed with
+            generators, which should result in overall improved data fusion.
+            """
         def get_chromosome_data(handles, filterf):
             """ Construct a generator to yield all the IBD entries for the
                 African-American HRS dataset. We are pulling Soheil's MergedData
@@ -50,46 +56,10 @@ class IBDAncestryMatch:
                     "filename_parserf":dataset_utils.sccs_name_parser})
         match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
 
-        # Open the relevant files
-        handles = map(jt.maybe_gzip_open, ibd_paths)
-
         # compute the ancestry matches for those individuals
-        matches = filter(lambda x: len(x) > 0, imap(
+        matches = ifilter(lambda x: len(x) > 0, imap(
             match_from_ibd_segment,
             get_chromosome_data(handles, dataset_utils.is_sccs)))
-
-        # close the files now that they've been read and parsed
-        map(lambda x: x.close(), handles)
-
-        # sanity check
-        if debug_mode:
-            for m in longest_matches:
-                # each match relates exactly two individuals
-                assert(len(m.individuals) == 2)
-                for individual in m.individuals:
-                    clone = bed.Individual.from_dir_and_name(
-                            outbed_path, individual.name, dataset_utils.sccs_name_parser)
-                    for hcode in bed.Individual.HAPLOTYPE_CODES:
-                        debug_bed = individual.to_debugstr(hcode)
-                        clone_debug_bed = clone.to_debugstr(hcode)
-                        if debug_bed != clone_debug_bed:
-                            print("Ancestry mismatch with clone!", file=sys.stderr)
-                            print("INTERNAL:", file=sys.stderr)
-                            print(debug_bed)
-                            print("CLONE:", file=sys.stderr)
-                            print(clone_debug_bed)
-                            raise Exception()
-                    # each individual has at least one ancestry
-                    assert(individual.ancestries)
-                    for (hcode, chromosomes) in individual.ancestries.items():
-                        # each haplotype has some chromosomes
-                        assert(chromosomes)
-                        for chromosome in chromosomes:
-                            # each chromosome has some segments
-                            assert(chromosome.segments)
-                            for seg in chromosome.segments:
-                                # each segment has a nonzero length
-                                assert(len(seg.interval_bp) > 0)
 
         return matches
 
