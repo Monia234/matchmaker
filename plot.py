@@ -238,14 +238,10 @@ def n_most(seq, n, comp=op.lt):
     return outseq if n >= len(seq) else outseq[:n]
 
 def main(ibd_paths, outbed_path, indiv_list_path, plot_name, debug_mode):
-
-    # the set of individuals in the HRS AfrAm
-    #INDIVS = set(jt.with_file(jt.map_c(lambda x: x[:-1]), indiv_list_path))
-
-    # Define some filter functions for the merged data.
-
-    matches = match.IBDAncestryMatch.from_ibds_and_bedpath(ibd_paths,
-            outbed_path, dataset_utils.is_sccs)
+    handles = imap(jt.maybe_gzip_open, ibd_paths)
+    matches = list(match.IBDAncestryMatch.from_ibds_and_bedpath(handles,
+            outbed_path, dataset_utils.is_sccs))
+    for x in handles: x.close()
 
     # take the N longest matches
     # this is unnecessarily slow since it sorts the list in full prior to
