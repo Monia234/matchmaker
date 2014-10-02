@@ -57,8 +57,6 @@ def main(ibd_paths, outbed_path, ibd_filter):
                 elemwise_append(tot_size, m.calculate_ibd_ancestry_sizes())),
             matches, (0, total_sizes))
 
-    print(total_sizes)
-
     for (code, size) in total_sizes.items():
         print(code, size / float(total_ibd_length), sep='\t')
 
