@@ -152,6 +152,10 @@ def maybe_gzip_open(filename, mode='rb'):
 def any_eq(elem, seq):
     return any(imap(curry2(op.eq)(elem), seq))
 
+def void(f):
+    """ Execute a function and discard its return value. """
+    f()
+
 def const(k):
     """ Construct a function of arbitrarily many arguments and keyword-
         arguments that simple ignores them, always returning the same
