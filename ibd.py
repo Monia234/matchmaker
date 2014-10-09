@@ -67,6 +67,16 @@ class IBDEntry:
         self.interval = je.Interval(maybeint(start), maybeint(end))
         self.dat = dat
 
+    def complement(self):
+        """ Construct an IBD segment ranging over the same region of the
+            genome, but with the haplotype identifiers switched for both
+            individuals.
+            """
+        return IBDEntry(self.chromosome, self.name[0], self.name[1],
+                1 - self.haplotype[0], 1 - self.haplotype[1],
+                self.family[0], self.family[1],
+                self.interval.start, self.interval.end, self.dat)
+
     def is_involved(self, individual_name):
         return any(map(_EQUALS(individual_name), self.name))
 
