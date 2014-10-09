@@ -4,7 +4,7 @@ AFRAMIDLIST="project/baharian_projects/HRS/data/AfricanAmericans/AfrAm.SubjID.li
 
 function SCCS {
     IBDDIR="project/baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected"
-    BEDDIR="project/barakatt_projects/HRS/results/SCCS_notphased_20140923/outbed"
+    BEDDIR="project/barakatt_projects/HRS/results/SCCS_MERGED_20140923/outbed"
 
     for chr in $(seq $1 $2) ; do
         NAME="SCCS-$(date +%F-%T-chr$chr)"
