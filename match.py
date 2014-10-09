@@ -243,7 +243,9 @@ class IBDAncestryMatch:
         haplotype_codes = map(
                 bed.Individual.bed_code_from_IBD,
                 self.ibd_segment.haplotype)
-        chrom = self.individuals[0][haplotype_codes[0]][self.ibd_segment.chromosome]
+        chrom = (self.individuals[0]
+                                 [haplotype_codes[0]]
+                                 [self.ibd_segment.chromosome - 1])
         sizes = {}
         for h in bed.AncestryCode.CODENAMES:
             sizes[h] = 0 # initialize each ancestry to zero
