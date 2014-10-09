@@ -80,19 +80,14 @@ if __name__ == "__main__":
     while i < len(args):
         arg = args[i]
         nextarg = lambda: args[i + 1]
-        if jt.any_eq(arg, ["-i", "--ibd"]):
-            ibds.append(nextarg())
-            i += 1
-        elif jt.any_eq(arg, ["-b", "--bed-dir"]):
+        if jt.any_eq(arg, ["-b", "--bed-dir"]):
             beddir = nextarg()
             i += 1
         elif jt.any_eq(arg, ["-d", "--dataset"]):
             dataset = nextarg()
             i += 1
         else:
-            print("Unrecognized command-line argument:", arg, file=sys.stderr)
-            show_usage()
-            sys.exit(1)
+            ibds.append(arg)
         i += 1
 
     if not (ibds and beddir and dataset):
