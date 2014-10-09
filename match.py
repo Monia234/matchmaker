@@ -260,6 +260,28 @@ class IBDAncestryMatch:
         """ Wrapper for the inner Interval's is_empty method. """
         return len(self.shared_segments) == 0
 
+    def to_string(self):
+        """ Render this match object as a string of GERMLINE output combined
+            with the relevant fields from the associated local ancestry data.
+            The resulting string can be loaded with the from_string factory
+            method.
+            """
+        ibd_string = self.ibd_segment.to_string()
+        rfmix_strings = []
+
+        chromosome_number = self.ibd_segment.chromosome
+
+        for (i, individual) in enumerate(self.individuals):
+            hap_code = bed.Individual.bed_code_from_IBD(
+                    self.ibd_segment.haplotype[i])
+            chromosome = individual[hap_code][chromosome_number - 1]
+            individual_strings = ["<#>"]
+            for segment in chromosome.segments:
+                individual_strings.append(segment.to_string())
+            rfmix_strings.append('\t'.join(individual_strings))
+
+        return "\t".join([ibd_string] + rfmix_strings)
+
     def __lt__(self, other):
         """ Compare this IBDAncestryMatch with another on the basis of their
             IBD segments. IBD segments are compared on the basis of their
