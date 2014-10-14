@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
 import operator as op
-import jerrington_tools as je
+import jerrington_tools as jt
 
-_EQUALS = je.curry2(op.eq)
+_EQUALS = jt.curry2(op.eq)
 
 class IBDEntry:
     """ Represents one entry of IDB between two individuals. Represents exactly
@@ -26,7 +26,7 @@ class IBDEntry:
             """
         needs_close = False
         if isinstance(path_or_handle, str):
-            handle = je.maybe_gzip_open(path_or_handle)
+            handle = jt.maybe_gzip_open(path_or_handle)
             needs_close = True
         else:
             handle = path_or_handle
@@ -64,7 +64,7 @@ class IBDEntry:
         self.name = (name1, name2)
         self.haplotype = map(maybeint, [hap1, hap2])
         self.family = (fam1, fam2)
-        self.interval = je.Interval(maybeint(start), maybeint(end))
+        self.interval = jt.Interval(maybeint(start), maybeint(end))
         self.dat = dat
 
     def complement(self):
