@@ -611,7 +611,8 @@ class Individual(object):
             s += '\n'.join(st)
         return s
 
-    def shared_ancestry_with(self, other, haplo_self, haplo_other, chromosome):
+    def shared_ancestry_with(self, other, haplo_self, haplo_other, chromosome,
+            type="MB"):
         """ For each haplotype, determine an interval along which this
             Individual has the same ancestry as another Individual.
 
@@ -623,6 +624,12 @@ class Individual(object):
                 haplo_other (haplotype code):
                     Which haplotype, for the other individual, should be
                     examined.
+                chromosome (integer):
+                    1-based index of the chromosome to examine.
+                type (string, default: "MB"):
+                    Whether the interval is to be reported in basepairs or in
+                    centimorgan. "MB" indicates basepairs, and "cM" indicates
+                    centimorgan. Other values will raise a ValueError.
 
             Note:
                 Recall that haplotype codes are the strings 'A' or 'B', used as
@@ -632,6 +639,17 @@ class Individual(object):
                  If A and B are instances of Individual, then
                  A.shared_ancestry_with(B) == B.shared_ancestry_with(A)
             """
+        if type == "MB":
+            getinterval = je.project_c("interval_bp")
+            make_segment = lambda code, chrom, start, end: AncestrySegment(
+                    code, chrom, je.Interval(start, end), je.Interval.zero())
+        elif type == "cM":
+            getinterval = je.project_c("interval_cm")
+            make_segment = lambda code, chrom, start, end: AncestrySegment(
+                    code, chrom, je.Interval.zero(), je.Interval(start, end))
+        else:
+            raise ValueError("invalid interval type ``%s''" % type)
+
         # pairs will be a list of two tuples, each tuple is
         # (self's ancestry, other's ancestry) on the same haplotype.
         pairs = zip(self.ancestries.values(), other.ancestries.values())
@@ -650,13 +668,13 @@ class Individual(object):
 
         # take the greatest of the two starting points, since we can't
         # really compare where there's nothing there!
-        start_position = max(haplos[0].segments[0].interval_bp.start,
-                             haplos[1].segments[0].interval_bp.start)
+        start_position = max(getinterval(haplos[0].segments[0]).start,
+                             getinterval(haplos[1].segments[0]).start)
 
         # take the smallest of the two end points, since there's no point
         # in trying to check past there.
-        last_position = min(haplos[0].segments[-1].interval_bp.end,
-                            haplos[1].segments[-1].interval_bp.end)
+        last_position = min(getinterval(haplos[0].segments[-1]).end,
+                            getinterval(haplos[1].segments[-1]).end)
 
         position = start_position # we start at the beginning, of course
 
@@ -687,9 +705,8 @@ class Individual(object):
                     shared = False # we exit the shared region
                     region_end = position # we mark the end position
                     regions.append(
-                            AncestrySegment(my_anc.code, chromosome,
-                                je.Interval(region_start, region_end),
-                                je.Interval.zero()))
+                            make_segment(my_anc.code, chromosome,
+                                region_start, region_end))
             else: # we are not in a shared region
                 if my_anc.code == other_anc.code: # if the codes match
                     shared = True # we enter the shared region
@@ -708,7 +725,7 @@ class Individual(object):
                         if (region_start - region_end <
                                 AncestrySegment.DISTANCE_CUTOFF):
                             # we set the start to that of the last region
-                            region_start = regions[-1].interval_bp.start
+                            region_start = getinterval(regions[-1]).start
                             del regions[-1] # remove the last region
                         else: #i.e. the regions are distinct
                             pass #no big deal.
@@ -736,9 +753,8 @@ class Individual(object):
                     shared = False
                     region_end = last_position
                     regions.append(
-                            AncestrySegment(my_anc.code, chromosome,
-                                je.Interval(region_start, region_end),
-                                je.Interval.zero()))
+                            make_segment(my_anc.code, chromosome,
+                                region_start, region_end))
                 break
 
             # then, we associate each of these indices with the relevant index
@@ -746,7 +762,7 @@ class Individual(object):
             # position.
             bests = sorted(list(enumerate(next_indices)),
                     key=
-                    lambda (i, j): haplos[i].segments[j].interval_bp.start)
+                    lambda (i, j): getinterval(haplos[i].segments[j]).start)
             best = bests[0] # we take the smallest value
 
             # remember this is a tuple s.t. (the index of the haplo, the
@@ -757,9 +773,8 @@ class Individual(object):
             segment_counter[haplo_index] = segment_index
 
             # actually assign the new position now
-            position = (haplos[haplo_index].
-                        segments[segment_index].
-                        interval_bp.start)
+            position = getinterval(
+                haplos[haplo_index].segments[segment_index]).start
         # end of the while loop
 
         # Return the list of regions computed.

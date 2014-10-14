@@ -5,6 +5,9 @@ import jerrington_tools as jt
 
 _EQUALS = jt.curry2(op.eq)
 
+BASEPAIR    = "MB"
+CENTIMORGAN = "cM"
+
 class IBDEntry:
     """ Represents one entry of IDB between two individuals. Represents exactly
         one line of GERMLINE data.  This class defines __str__ to produce
@@ -47,24 +50,27 @@ class IBDEntry:
 
     @staticmethod
     def from_string(input_str):
-        # Split up the input string according to the GERMLINE output format
-        (fam1, id1hap, fam2, id2hap,
-                chr, start, end, dat) = input_str.split(None, 7)
+        """ Parse a string of one line of GERMLINE output as an IBDEntry. """
+        (fam1, id1hap, fam2, id2hap, chr, start, end,
+                a1, a2, a3, a4, type, dat) = input_str.split(None, 12)
         id1, hap1 = id1hap.split('.')
         id2, hap2 = id2hap.split('.')
 
-        return IBDEntry(chr, id1, id2, hap1, hap2, fam1, fam2, start, end, dat)
+        dat = '\t'.join([a1, a2, a3, a4, type, dat])
+
+        return IBDEntry(
+                chr, id1, id2, hap1, hap2, fam1, fam2, start, end, dat, type)
 
     def __init__(self, chr, name1, name2, hap1, hap2, fam1, fam2,
-            start, end, dat):
-        def maybeint(d):
-            return d if type(d) == int else int(d)
-
-        self.chromosome = maybeint(chr)
+            start, end, dat, type=BASEPAIR):
+        self.chromosome = numparse(chr)
         self.name = (name1, name2)
-        self.haplotype = map(maybeint, [hap1, hap2])
+        self.haplotype = map(int, [hap1, hap2])
         self.family = (fam1, fam2)
-        self.interval = jt.Interval(maybeint(start), maybeint(end))
+
+        # parse as int or float if string, else don't parse.
+        numparse = lambda x: (float if type == "cM" else int)(x) if isinstance(x, str) else x
+        self.interval = jt.Interval(numparse(start), numparse(end))
         self.dat = dat
 
     def complement(self):
@@ -75,7 +81,7 @@ class IBDEntry:
         return IBDEntry(self.chromosome, self.name[0], self.name[1],
                 1 - self.haplotype[0], 1 - self.haplotype[1],
                 self.family[0], self.family[1],
-                self.interval.start, self.interval.end, self.dat)
+                self.interval.start, self.interval.end, self.dat, self.type)
 
     def is_involved(self, individual_name):
         return any(map(_EQUALS(individual_name), self.name))

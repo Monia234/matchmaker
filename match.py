@@ -214,7 +214,8 @@ class IBDAncestryMatch:
                     self.ibd_segment.haplotype[0]),
                 bed.Individual.bed_code_from_IBD(
                     self.ibd_segment.haplotype[1]),
-                self.ibd_segment.chromosome)
+                self.ibd_segment.chromosome,
+                self.ibd_segment.type)
 
         if robust:
             shared_segments_reverse = self.individuals[1].shared_ancestry_with(
@@ -223,7 +224,8 @@ class IBDAncestryMatch:
                         self.ibd_segment.haplotype[1]),
                     bed.Individual.bed_code_from_IBD(
                         self.ibd_segment.haplotype[0]),
-                    self.ibd_segment.chromosome)
+                    self.ibd_segment.chromosome,
+                    self.ibd_segment.type)
 
             if shared_segments != shared_segments_reverse:
                 raise ValueError("Robustness check failed for individuals",
@@ -236,9 +238,15 @@ class IBDAncestryMatch:
 
     def calculate_ibd_ancestry_sizes(self):
         """ Get a dict associating ancestry codenames with their size within
-            the IBD region of this match. Sizes are in basepairs. The constructed
-            list is saved to the attribute ibd_ancestry_sizes.
+            the IBD region of this match. Sizes are whatever type is used for
+            the IBDEntry. The constructed list is saved to the attribute
+            ibd_ancestry_sizes, and is also returned.
             """
+        if self.ibd_segment.type == "MB":
+            getinterval = jt.project_c("interval_bp")
+        else:
+            getinterval = jt.project_c("interval_cm")
+
         ibd_interval = self.ibd_segment.interval
         haplotype_codes = map(
                 bed.Individual.bed_code_from_IBD,
@@ -251,7 +259,7 @@ class IBDAncestryMatch:
             sizes[h] = 0 # initialize each ancestry to zero
 
         for segment in chrom.segments:
-            N = ibd_interval.intersection(segment.interval_bp)
+            N = ibd_interval.intersection(getinterval(segment))
             sizes[segment.code.name] += len(N)
         self.ibd_ancestry_sizes = sizes
         return sizes
