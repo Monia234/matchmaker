@@ -110,4 +110,4 @@ if __name__ == "__main__":
         show_usage()
         sys.exit(1)
 
-    main(ibds, beddir, dataset_utils.is_sccs)
+    main(ibds, beddir, filters[dataset])
