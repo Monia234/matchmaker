@@ -63,15 +63,18 @@ class IBDEntry:
 
     def __init__(self, chr, name1, name2, hap1, hap2, fam1, fam2,
             start, end, dat, type=BASEPAIR):
-        self.chromosome = numparse(chr)
+        numparse = lambda x: (float if type == "cM" else int)(x) if isinstance(x, str) else x
+
+        self.chromosome = int(chr)
         self.name = (name1, name2)
         self.haplotype = map(int, [hap1, hap2])
         self.family = (fam1, fam2)
 
         # parse as int or float if string, else don't parse.
-        numparse = lambda x: (float if type == "cM" else int)(x) if isinstance(x, str) else x
         self.interval = jt.Interval(numparse(start), numparse(end))
         self.dat = dat
+
+        self.type = type
 
     def complement(self):
         """ Construct an IBD segment ranging over the same region of the

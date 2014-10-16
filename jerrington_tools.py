@@ -328,7 +328,10 @@ class Interval(object):
 
 
     def __repr__(self):
-        return "Interval(%d, %d)" % (self.start, self.end)
+        if isinstance(self.start, int):
+            return "Interval(%d, %d)" % (self.start, self.end)
+        else:
+            return "Interval(%f, %f)" % (self.start, self.end)
 
     def __contains__(self, value):
         """ Determine whether the given value is contained within the interval.
