@@ -57,6 +57,10 @@ def main(ibd_paths, outbed_path, ibd_filter):
                 elemwise_append(tot_size, m.calculate_ibd_ancestry_sizes())),
             matches, (0, total_sizes))
 
+    # everything is zero ! Each of the sizes, the total_ibd_length... but why?
+
+    print(total_ibd_length, total_sizes, file=sys.stderr)
+
     for (code, size) in total_sizes.items():
         print(code, size / float(total_ibd_length), sep='\t')
 
