@@ -51,11 +51,14 @@ def main(ibd_paths, outbed_path, ibd_filter):
             d1[k] += v
         return d1
 
-    (total_ibd_length, total_sizes) = reduce(
-            lambda (ibd_len, tot_size), m: (
-                ibd_len + m.ibd_segment.length(),
-                elemwise_append(tot_size, m.calculate_ibd_ancestry_sizes())),
-            matches, (0, total_sizes))
+    total_ibd_length = 0
+
+    for m in matches:
+        l = m.ibd_segment.length()
+        s = m.calculate_ibd_ancestry_sizes()
+        print(l, s)
+        total_ibd_length += l
+        elemwise_append(total_sizes, s)
 
     # everything is zero ! Each of the sizes, the total_ibd_length... but why?
 
