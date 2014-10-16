@@ -53,7 +53,7 @@ def main(ibd_paths, outbed_path, ibd_filter):
 
     (total_ibd_length, total_sizes) = reduce(
             lambda (ibd_len, tot_size), m: (
-                ibd_len + len(m.ibd_segment),
+                ibd_len + m.ibd_segment.length(),
                 elemwise_append(tot_size, m.calculate_ibd_ancestry_sizes())),
             matches, (0, total_sizes))
 

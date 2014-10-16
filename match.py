@@ -259,8 +259,9 @@ class IBDAncestryMatch:
             sizes[h] = 0 # initialize each ancestry to zero
 
         for segment in chrom.segments:
-            N = ibd_interval.intersection(getinterval(segment))
-            sizes[segment.code.name] += len(N)
+            sizes[segment.code.name] += \
+                    ibd_interval.intersection(getinterval(segment)).length()
+
         self.ibd_ancestry_sizes = sizes
         return sizes
 

@@ -326,6 +326,8 @@ class Interval(object):
             """
         return other.is_superset(self)
 
+    def length(self):
+        return self.end - self.start
 
     def __repr__(self):
         if isinstance(self.start, int):
@@ -339,8 +341,14 @@ class Interval(object):
         return self.start <= value and value <= self.end
 
     def __len__(self):
-        """ Calculate the length of the interval. """
-        return self.end - self.start
+        """ Calculate the length of the interval.
+            This method will return the properly-typed value, but when using
+            the len builtin, the return value is casted to an int.
+            In the case where the return type matters (e.g. float intervals)
+            use the length method instead. (Or call __len__ directly, but that's
+            not pretty.)
+            """
+        return self.length()
 
     def __lt__(self, other):
         """ We impose a partial ordering on the inhabitants of the Interval

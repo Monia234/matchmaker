@@ -93,6 +93,12 @@ class IBDEntry:
         """ Convenience function for readability. """
         return self.__str__()
 
+    def length(self):
+        """ Return the length of the underlying Interval.
+            This method is not subject to casting to int as with the len builtin.
+            """
+        return self.interval.length()
+
     def __str__(self):
         """ Convert this IBD entry into a valid line of GERMLINE output. """
         return "{}\t{}.{}\t{}\t{}.{}\t{}\t{}\t{}\t{}" \
