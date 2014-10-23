@@ -56,7 +56,6 @@ def main(ibd_paths, outbed_path, ibd_filter):
     for m in matches:
         l = m.ibd_segment.length()
         s = m.calculate_ibd_ancestry_sizes()
-        print(l, s)
         total_ibd_length += l
         elemwise_append(total_sizes, s)
 

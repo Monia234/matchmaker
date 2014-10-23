@@ -57,7 +57,7 @@ class IBDAncestryMatch:
         match_from_ibd_segment = flipcurry2(my_from_ibd_segment)(outbed_path)
 
         # compute the ancestry matches for those individuals
-        matches = ifilter(lambda x: len(x) > 0, imap(
+        matches = ifilter(lambda x: x.length() > 0, imap(
             match_from_ibd_segment,
             get_chromosome_data(handles, dataset_utils.is_sccs)))
 
@@ -266,8 +266,36 @@ class IBDAncestryMatch:
         return sizes
 
     def is_empty(self):
-        """ Wrapper for the inner Interval's is_empty method. """
+        """ Whether the match is empty. A match is empty if there are no match
+            segments. """
         return len(self.shared_segments) == 0
+
+    def length(self):
+        """ Gets the total length of the shared segments, ignoring gaps between
+            them, if any.
+            An exception is raised if the shared segments have not been computed
+            yet.
+            Zero is returned if there are no shared segments.
+            """
+        type = self.ibd_segment.type
+        if type == "MB":
+            def get_interval(s):
+                return s.interval_bp
+        elif type == "cM":
+            def get_interval(s):
+                return s.interval_cm
+        else:
+            raise ValueError("invalid type of length to get.")
+
+        if self.shared_segments is None:
+            raise ValueError("Cannot get length of unevaluated match.")
+
+        elif not self.shared_segments:
+            r = 0
+        else:
+            r = (get_interval(self.shared_segments[-1]).end -
+                    get_interval(self.shared_segments[0]).start)
+        return r
 
     def to_string(self):
         """ Render this match object as a string of GERMLINE output combined
@@ -308,21 +336,6 @@ class IBDAncestryMatch:
             from smallest to largest.
             """
         return self.ibd_segment > other.ibd_segment
-
-    def __len__(self):
-        """ Gets the total length of the shared segments, ignoring gaps between
-            them, if any.
-            An exception is raised if the shared segments have not been computed
-            yet.
-            Zero is returned if there are no shared segments.
-            """
-        if self.shared_segments is None:
-            raise ValueError("Cannot get length of unevaluated match.")
-        elif not self.shared_segments:
-            return 0
-        else:
-            return (self.shared_segments[-1].interval_bp.end -
-                    self.shared_segments[0].interval_bp.start)
 
     def __repr__(self):
         return "IBDAncestryMatch(%s, %s, %s)" % (
