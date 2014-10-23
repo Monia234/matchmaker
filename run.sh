@@ -3,12 +3,12 @@
 AFRAMIDLIST="project/baharian_projects/HRS/data/AfricanAmericans/AfrAm.SubjID.list"
 
 function SCCS {
-    IBDDIR="project/baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected"
+    IBDDIR="project/baharian_projects/MergedData/phased/3_GERMLINE/cMcorrected/filtered"
     BEDDIR="project/barakatt_projects/HRS/results/SCCS_MERGED_20140923/outbed"
 
     for chr in $(seq $1 $2) ; do
         NAME="SCCS-$(date +%F-%T-chr$chr)"
-        if python plot.py --ibd $IBDDIR/MERGED_chr${chr}.cM.IBD.match.gz --bed $BEDDIR --ids dummy \
+        if python plot.py --ibd $IBDDIR/MERGED_chr${chr}.bp2cM.IBD.match.gz --bed $BEDDIR --ids dummy \
             -o "plots/${NAME}.png" > "logs/${NAME}.log"
         then
             notify-send "SCCS IBD and local ancestry plots" "Finished generating 'plots/$NAME'."
